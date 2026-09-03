@@ -15,6 +15,12 @@ describe("colorScales", () => {
     expect(getEraColor(1895)).toBe("#7f0000");
   });
 
+  it("maps any valid year yr > 0 && yr < 1900 to #7f0000 (Pre-1900)", () => {
+    expect(getEraColor(1820)).toBe("#7f0000");
+    expect(getEraColor(1836)).toBe("#7f0000");
+    expect(getEraColor(1847)).toBe("#7f0000");
+  });
+
   it("returns correct era color for 1925", () => {
     expect(getEraColor(1925)).toBe("#d7301f");
   });

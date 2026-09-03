@@ -154,6 +154,14 @@ describe("MapView component", () => {
       expect.objectContaining({ id: "parcels-highlight" })
     );
 
+    // Verify historic district line is added AFTER parcels so boundaries remain crisp
+    const layerCalls = mockMapInstance.addLayer.mock.calls.map(
+      (call: any[]) => call[0].id
+    );
+    const districtLineIndex = layerCalls.indexOf("historic-districts-line");
+    const parcelsFillIndex = layerCalls.indexOf("parcels-fill");
+    expect(districtLineIndex).toBeGreaterThan(parcelsFillIndex);
+
     // Verify landmarks source and pins
     expect(mockMapInstance.addSource).toHaveBeenCalledWith(
       "landmarks",
@@ -277,7 +285,7 @@ describe("MapView component", () => {
     expect(onSelectParcel).toHaveBeenCalledWith(mockParcelData);
   });
 
-  it("emits onSelectLandmark when landmark marker is clicked", () => {
+  it("emits onSelectLandmark once on landmarks-outer without duplicate callbacks", () => {
     const onSelectLandmark = vi.fn();
     render(<MapView onSelectLandmark={onSelectLandmark} />);
 
@@ -286,9 +294,12 @@ describe("MapView component", () => {
       loadCallbacks.forEach((cb) => cb({}));
     });
 
+    // Ensure no duplicate listener is registered on landmarks-inner
+    expect(eventListeners.get("click:landmarks-inner")).toBeUndefined();
+
     const landmarkClickCallbacks =
-      eventListeners.get("click:landmarks-inner") || [];
-    expect(landmarkClickCallbacks.length).toBeGreaterThan(0);
+      eventListeners.get("click:landmarks-outer") || [];
+    expect(landmarkClickCallbacks.length).toBe(1);
 
     const mockLandmarkData = {
       id: "lm-kellum-noble",
@@ -306,6 +317,7 @@ describe("MapView component", () => {
       );
     });
 
+    expect(onSelectLandmark).toHaveBeenCalledTimes(1);
     expect(onSelectLandmark).toHaveBeenCalledWith(mockLandmarkData);
   });
 
@@ -370,6 +382,17 @@ describe("MapView component", () => {
     expect(onSelectParcel).toHaveBeenCalledWith(null);
     expect(onSelectLandmark).toHaveBeenCalledWith(null);
     expect(onSelectDistrict).toHaveBeenCalledWith(null);
+  });
+
+  it("does not destroy or recreate map when inline initialCenter array is passed across renders", () => {
+    const { rerender } = render(<MapView initialCenter={[-95.362, 29.759]} />);
+    const initialMap = mockMapInstance;
+    expect(initialMap).not.toBeNull();
+
+    // Rerender with fresh array reference of same coordinates
+    rerender(<MapView initialCenter={[-95.362, 29.759]} />);
+    expect(mockMapInstance).toBe(initialMap);
+    expect(initialMap.remove).not.toHaveBeenCalled();
   });
 
   it("cleans up map instance on unmount", () => {

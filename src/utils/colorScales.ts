@@ -97,7 +97,7 @@ export const HISTORIC_ERAS: EraDefinition[] = [
  * to pale yellow (#fff7bc) for modern infill.
  */
 export const COLOR_RAMP_9_INTERVALS: ColorInterval[] = [
-  { minYear: 1836, maxYear: 1899, color: "#7f0000", label: "Pre-1900" },
+  { minYear: 1, maxYear: 1899, color: "#7f0000", label: "Pre-1900" },
   { minYear: 1900, maxYear: 1914, color: "#b30000", label: "1900–1914" },
   { minYear: 1915, maxYear: 1929, color: "#d7301f", label: "1915–1929" },
   { minYear: 1930, maxYear: 1939, color: "#ef6548", label: "1930–1939" },
@@ -121,13 +121,19 @@ export const CONTRIBUTING_COLORS = {
 
 /**
  * Resolves the color of an architectural era or parcel year.
+ * Ensures any valid year yr > 0 && yr < 1900 maps to #7f0000 (Pre-1900)
+ * rather than unknown gray.
  * Consistent with the MapLibre GPU step shader.
  */
 export function getEraColor(year: number | string | null | undefined): string {
   if (year === null || year === undefined) return UNKNOWN_COLOR;
   const yr = typeof year === "string" ? parseFloat(year) : year;
-  if (isNaN(yr) || yr <= 0 || yr < 1836) {
+  if (isNaN(yr) || yr <= 0) {
     return UNKNOWN_COLOR;
+  }
+
+  if (yr < 1900) {
+    return "#7f0000";
   }
 
   for (const interval of COLOR_RAMP_9_INTERVALS) {
@@ -168,7 +174,7 @@ export function getMapLibreColorExpression(): ExpressionSpecification {
     "step",
     ["get", "yr"],
     UNKNOWN_COLOR,
-    1836, "#7f0000",
+    1, "#7f0000",
     1900, "#b30000",
     1915, "#d7301f",
     1930, "#ef6548",

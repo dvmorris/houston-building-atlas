@@ -179,6 +179,10 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
+  // Destructure coordinates to avoid tearing down map on inline array references
+  const centerLng = initialCenter?.[0] ?? DEFAULT_HOUSTON_CENTER[0];
+  const centerLat = initialCenter?.[1] ?? DEFAULT_HOUSTON_CENTER[1];
+
   // Keep references to latest callbacks to avoid tearing down map instance
   const onSelectParcelRef = useRef(onSelectParcel);
   onSelectParcelRef.current = onSelectParcel;
@@ -213,7 +217,7 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: CARTO_POSITRON_RASTER_STYLE,
-      center: initialCenter,
+      center: [centerLng, centerLat],
       zoom: initialZoom,
       minZoom: 9,
       maxZoom: 19,
@@ -250,7 +254,8 @@ export const MapView: React.FC<MapViewProps> = ({
     // Setup sources and layers when style loads
     map.on("load", () => {
       // -------------------------------------------------------------
-      // 1. Historic District Boundaries & Fill
+      // 1. Historic District Boundaries Source & Base Fill
+      // (Fill is added under parcels, while outline is added ABOVE parcels)
       // -------------------------------------------------------------
       map.addSource("historic-districts", {
         type: "geojson",
@@ -264,18 +269,6 @@ export const MapView: React.FC<MapViewProps> = ({
         paint: {
           "fill-color": "#b45309", // Warm amber tint
           "fill-opacity": 0.08,
-        },
-      });
-
-      map.addLayer({
-        id: "historic-districts-line",
-        type: "line",
-        source: "historic-districts",
-        paint: {
-          "line-color": "#d97706",
-          "line-width": 2,
-          "line-dasharray": [3, 2],
-          "line-opacity": 0.85,
         },
       });
 
@@ -382,7 +375,23 @@ export const MapView: React.FC<MapViewProps> = ({
       }
 
       // -------------------------------------------------------------
-      // 3. Landmark Points & Custom Pins (LM vs PLM)
+      // 3. Historic District Boundary Lines (Rendered ABOVE parcels)
+      // Added after parcels so district borders remain prominent & crisp
+      // -------------------------------------------------------------
+      map.addLayer({
+        id: "historic-districts-line",
+        type: "line",
+        source: "historic-districts",
+        paint: {
+          "line-color": "#d97706",
+          "line-width": 2,
+          "line-dasharray": [3, 2],
+          "line-opacity": 0.85,
+        },
+      });
+
+      // -------------------------------------------------------------
+      // 4. Landmark Points & Custom Pins (LM vs PLM)
       // -------------------------------------------------------------
       map.addSource("landmarks", {
         type: "geojson",
@@ -414,7 +423,7 @@ export const MapView: React.FC<MapViewProps> = ({
         },
       });
 
-      // Landmark Outer Disc / Ring
+      // Landmark Outer Disc / Ring (Encompasses pin boundary)
       map.addLayer({
         id: "landmarks-outer",
         type: "circle",
@@ -488,7 +497,7 @@ export const MapView: React.FC<MapViewProps> = ({
       });
 
       // -------------------------------------------------------------
-      // 4. Interactive Event Handlers (Click & Hover)
+      // 5. Interactive Event Handlers (Click & Hover)
       // -------------------------------------------------------------
       const cursorLayers = ["parcels-fill", "landmarks-outer", "landmarks-inner"];
       cursorLayers.forEach((layerId) => {
@@ -500,15 +509,7 @@ export const MapView: React.FC<MapViewProps> = ({
         });
       });
 
-      // Landmark Click
-      map.on("click", "landmarks-inner", (e) => {
-        if (!e.features || e.features.length === 0) return;
-        const feature = e.features[0];
-        onSelectLandmarkRef.current?.(
-          feature.properties as unknown as LandmarkProperties
-        );
-      });
-
+      // Landmark Click: Listen exclusively on landmarks-outer to prevent duplicate callbacks
       map.on("click", "landmarks-outer", (e) => {
         if (!e.features || e.features.length === 0) return;
         const feature = e.features[0];
@@ -520,7 +521,7 @@ export const MapView: React.FC<MapViewProps> = ({
       // Parcel Click
       map.on("click", "parcels-fill", (e) => {
         const landmarkHits = map.queryRenderedFeatures(e.point, {
-          layers: ["landmarks-inner", "landmarks-outer"],
+          layers: ["landmarks-outer", "landmarks-inner"],
         });
         if (landmarkHits.length > 0) return; // Landmark takes click precedence
 
@@ -534,7 +535,7 @@ export const MapView: React.FC<MapViewProps> = ({
       // District Click (when not clicking parcel or landmark)
       map.on("click", "historic-districts-fill", (e) => {
         const higherFeatures = map.queryRenderedFeatures(e.point, {
-          layers: ["landmarks-inner", "landmarks-outer", "parcels-fill"],
+          layers: ["landmarks-outer", "landmarks-inner", "parcels-fill"],
         });
         if (higherFeatures.length > 0) return;
 
@@ -549,8 +550,8 @@ export const MapView: React.FC<MapViewProps> = ({
       map.on("click", (e) => {
         const anyFeatures = map.queryRenderedFeatures(e.point, {
           layers: [
-            "landmarks-inner",
             "landmarks-outer",
+            "landmarks-inner",
             "parcels-fill",
             "historic-districts-fill",
           ],
@@ -567,12 +568,14 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     return () => {
+      setMapLoaded(false);
       map.remove();
       mapRef.current = null;
     };
   }, [
     districtsGeojsonUrl,
-    initialCenter,
+    centerLng,
+    centerLat,
     initialZoom,
     landmarksGeojsonUrl,
     parcelsGeojsonUrl,
