@@ -340,7 +340,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   // Keyboard shortcut listener (/ or ⌘K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey))) && document.activeElement !== inputRef.current) {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target?.matches?.('input, textarea, select, [contenteditable="true"]') ||
+        target?.isContentEditable;
+
+      if (e.key === "/" && isEditable) return;
+
+      if (
+        (e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey))) &&
+        document.activeElement !== inputRef.current
+      ) {
         e.preventDefault();
         inputRef.current?.focus();
         inputRef.current?.select();

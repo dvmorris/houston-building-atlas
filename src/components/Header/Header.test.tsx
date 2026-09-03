@@ -188,6 +188,27 @@ describe("Header & SearchBar", () => {
       expect(input.value).toBe("");
       expect(screen.queryByTestId("search-results-list")).not.toBeInTheDocument();
     });
+
+    it("does not steal focus with slash shortcut when user is typing in another input or textarea", () => {
+      const onSelectLocation = vi.fn();
+      render(
+        <div>
+          <SearchBar onSelectLocation={onSelectLocation} />
+          <textarea data-testid="other-textarea" />
+        </div>
+      );
+
+      const searchInput = screen.getByTestId("search-bar-input");
+      const textarea = screen.getByTestId("other-textarea");
+
+      textarea.focus();
+      expect(document.activeElement).toBe(textarea);
+
+      // Pressing "/" inside textarea should NOT steal focus to search input
+      fireEvent.keyDown(textarea, { key: "/" });
+      expect(document.activeElement).toBe(textarea);
+      expect(document.activeElement).not.toBe(searchInput);
+    });
   });
 
   describe("Header Component", () => {
@@ -387,6 +408,29 @@ describe("Header & SearchBar", () => {
       expect(
         screen.queryByTestId("mobile-nav-drawer")
       ).not.toBeInTheDocument();
+    });
+
+    it("closes open modals when Escape key is pressed", () => {
+      const onSelectLocation = vi.fn();
+      render(<Header onSelectLocation={onSelectLocation} />);
+
+      // Open About modal
+      const aboutBtn = screen.getByTestId("nav-about-btn");
+      fireEvent.click(aboutBtn);
+      expect(screen.getByTestId("about-atlas-modal")).toBeInTheDocument();
+
+      // Press Escape
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByTestId("about-atlas-modal")).not.toBeInTheDocument();
+
+      // Open Districts Guide modal
+      const districtsBtn = screen.getByTestId("nav-districts-btn");
+      fireEvent.click(districtsBtn);
+      expect(screen.getByTestId("districts-guide-modal")).toBeInTheDocument();
+
+      // Press Escape
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByTestId("districts-guide-modal")).not.toBeInTheDocument();
     });
   });
 });

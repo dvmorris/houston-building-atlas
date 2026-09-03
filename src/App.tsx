@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
+import { AlertCircle, X } from "lucide-react";
 import MapView, {
   ParcelProperties,
   LandmarkProperties,
@@ -39,9 +40,12 @@ export default function App() {
     []
   );
 
+  const [geoErrorMessage, setGeoErrorMessage] = useState<string | null>(null);
+
   // Initialize GPS locator hook
   const geolocator = useGeolocator({
     onLocationFound: (coords) => {
+      setGeoErrorMessage(null);
       if (mapRef.current && typeof mapRef.current.flyTo === "function") {
         mapRef.current.flyTo({
           center: [coords.longitude, coords.latitude],
@@ -50,7 +54,20 @@ export default function App() {
         });
       }
     },
+    onError: (err) => {
+      setGeoErrorMessage(err);
+    },
   });
+
+  // Automatically dismiss error notification after 6 seconds
+  useEffect(() => {
+    if (geoErrorMessage) {
+      const timer = setTimeout(() => {
+        setGeoErrorMessage(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [geoErrorMessage]);
 
   const handleSelectParcel = (parcel: ParcelProperties | null) => {
     setSelectedParcel(parcel);
@@ -150,6 +167,32 @@ export default function App() {
         onYearMinChange={timeline.setYearMin}
         onYearMaxChange={timeline.setYearMax}
       />
+
+      {/* Dismissible Geolocation Error Toast Notification */}
+      {geoErrorMessage && (
+        <div
+          role="alert"
+          data-testid="geolocation-error-toast"
+          className="absolute top-16 right-4 z-40 max-w-sm bg-rose-950/95 border border-rose-700/80 text-rose-100 px-3.5 py-2.5 rounded-lg shadow-2xl backdrop-blur-md flex items-start gap-2.5 text-xs"
+        >
+          <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
+          <div className="flex-1 min-w-0 pr-1">
+            <p className="font-semibold text-rose-200">Location Notice</p>
+            <p className="text-rose-100/90 text-[11px] mt-0.5 leading-snug">
+              {geoErrorMessage}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGeoErrorMessage(null)}
+            aria-label="Dismiss location error"
+            data-testid="dismiss-geo-error-btn"
+            className="text-rose-300 hover:text-rose-100 p-0.5 rounded hover:bg-rose-900/60 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Main Map View Area */}
       <main className="relative flex-1 min-h-0">

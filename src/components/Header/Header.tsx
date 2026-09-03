@@ -13,7 +13,7 @@
  * 6. Responsive mobile drawer navigation
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Compass,
   Layers,
@@ -73,6 +73,31 @@ export const Header: React.FC<HeaderProps> = ({
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close open modals or mobile drawer on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (aboutModalOpen) setAboutModalOpen(false);
+        if (districtsModalOpen) setDistrictsModalOpen(false);
+        if (feedbackModalOpen) setFeedbackModalOpen(false);
+        if (mobileMenuOpen) setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [aboutModalOpen, districtsModalOpen, feedbackModalOpen, mobileMenuOpen]);
+
+  // Clean up feedback submission timer on unmount
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleOpenAbout = () => {
     if (onOpenAbout) {
       onOpenAbout();
@@ -105,11 +130,15 @@ export const Header: React.FC<HeaderProps> = ({
     e.preventDefault();
     if (!feedbackMsg.trim()) return;
     setFeedbackSubmitted(true);
-    setTimeout(() => {
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+    }
+    feedbackTimerRef.current = setTimeout(() => {
       setFeedbackModalOpen(false);
       setFeedbackSubmitted(false);
       setFeedbackMsg("");
       setFeedbackEmail("");
+      feedbackTimerRef.current = null;
     }, 1800);
   };
 

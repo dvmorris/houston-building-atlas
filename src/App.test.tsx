@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import App from "./App";
 
@@ -128,5 +128,52 @@ describe("App", () => {
     fireEvent.click(locateBtn);
 
     expect(mockGetCurrentPosition).toHaveBeenCalled();
+  });
+
+  it("displays dismissible toast notification when geolocation error occurs", () => {
+    let errorCallback: any = null;
+    const mockGetCurrentPosition = vi.fn((_success: any, error: any) => {
+      errorCallback = error;
+    });
+
+    Object.defineProperty(navigator, "geolocation", {
+      value: {
+        getCurrentPosition: mockGetCurrentPosition,
+        watchPosition: vi.fn(),
+        clearWatch: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    render(<App />);
+
+    const locateBtn = screen.getByTestId("locate-me-btn");
+    fireEvent.click(locateBtn);
+
+    expect(mockGetCurrentPosition).toHaveBeenCalled();
+
+    // Trigger permission denied error
+    act(() => {
+      errorCallback({
+        code: 1,
+        message: "User denied Geolocation",
+      });
+    });
+
+    // Verify toast appears
+    const toast = screen.getByTestId("geolocation-error-toast");
+    expect(toast).toBeInTheDocument();
+    expect(
+      screen.getByText(/Location permission denied/i)
+    ).toBeInTheDocument();
+
+    // Dismiss toast
+    const dismissBtn = screen.getByTestId("dismiss-geo-error-btn");
+    fireEvent.click(dismissBtn);
+
+    expect(
+      screen.queryByTestId("geolocation-error-toast")
+    ).not.toBeInTheDocument();
   });
 });
