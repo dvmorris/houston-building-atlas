@@ -1,0 +1,198 @@
+{
+  "type": "FeatureCollection",
+  "name": "historic_districts",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "dist-downtown",
+      "properties": {
+        "id": "dist-downtown",
+        "name": "Downtown",
+        "full_name": "Downtown Historic District",
+        "designated_year": 1995,
+        "description": "Houston's commercial, financial, and civic heart centered around Market Square, historic Main Street, and Buffalo Bayou, boasting 19th-century commercial storefronts and early skyscrapers.",
+        "arch_styles": [
+          "Victorian Commercial",
+          "Italianate",
+          "Commercial Classical",
+          "Art Deco"
+        ],
+        "total_structures": 42,
+        "contributing_count": 34,
+        "non_contributing_count": 8,
+        "ordinance_no": "95-128"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3655,
+              29.761
+            ],
+            [
+              -95.3615,
+              29.7645
+            ],
+            [
+              -95.3585,
+              29.762
+            ],
+            [
+              -95.3625,
+              29.7585
+            ],
+            [
+              -95.3655,
+              29.761
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dist-old-sixth-ward",
+      "properties": {
+        "id": "dist-old-sixth-ward",
+        "name": "Old Sixth Ward",
+        "full_name": "Old Sixth Ward Historic District",
+        "designated_year": 1998,
+        "description": "Houston's oldest intact residential neighborhood, celebrated for Texas's highest concentration of Victorian cottages, Queen Anne millwork, and Gulf Coast cottages built by railroad and trades workers.",
+        "arch_styles": [
+          "Victorian Cottage",
+          "Queen Anne",
+          "Greek Revival",
+          "Folk Victorian"
+        ],
+        "total_structures": 285,
+        "contributing_count": 218,
+        "non_contributing_count": 67,
+        "ordinance_no": "98-472"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.378,
+              29.764
+            ],
+            [
+              -95.378,
+              29.771
+            ],
+            [
+              -95.369,
+              29.771
+            ],
+            [
+              -95.369,
+              29.764
+            ],
+            [
+              -95.378,
+              29.764
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dist-heights-south",
+      "properties": {
+        "id": "dist-heights-south",
+        "name": "Heights South",
+        "full_name": "Houston Heights Historic District South",
+        "designated_year": 2011,
+        "description": "Southern section of Houston's premier planned streetcar suburb (founded 1891), filled with Craftsman bungalows, Folk Victorian cottages, and Queen Anne residences.",
+        "arch_styles": [
+          "Craftsman",
+          "Queen Anne",
+          "Folk Victorian",
+          "Colonial Revival"
+        ],
+        "total_structures": 520,
+        "contributing_count": 382,
+        "non_contributing_count": 138,
+        "ordinance_no": "2011-684"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.402,
+              29.784
+            ],
+            [
+              -95.402,
+              29.794
+            ],
+            [
+              -95.393,
+              29.794
+            ],
+            [
+              -95.393,
+              29.784
+            ],
+            [
+              -95.402,
+              29.784
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dist-boulevard-oaks",
+      "properties": {
+        "id": "dist-boulevard-oaks",
+        "name": "Boulevard Oaks",
+        "full_name": "Boulevard Oaks Historic District",
+        "designated_year": 2009,
+        "description": "A magnificent 1920s garden suburb renowned for cathedral live oaks lining North and South Boulevards and masterwork residential designs by noted architects Birdsall Briscoe, John Staub, and William Ward Watkin.",
+        "arch_styles": [
+          "Georgian Revival",
+          "Tudor Revival",
+          "Mediterranean Revival",
+          "French Eclectic"
+        ],
+        "total_structures": 310,
+        "contributing_count": 245,
+        "non_contributing_count": 65,
+        "ordinance_no": "2009-155"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.406,
+              29.722
+            ],
+            [
+              -95.406,
+              29.73
+            ],
+            [
+              -95.392,
+              29.73
+            ],
+            [
+              -95.392,
+              29.722
+            ],
+            [
+              -95.406,
+              29.722
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

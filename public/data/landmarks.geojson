@@ -1,0 +1,246 @@
+{
+  "type": "FeatureCollection",
+  "name": "landmarks",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "lm-kellum-noble",
+      "properties": {
+        "id": "lm-kellum-noble",
+        "name": "Kellum-Noble House (Sam Houston Park)",
+        "addr": "212 DALLAS ST",
+        "yr": 1847,
+        "architect": "Nathaniel Kellum",
+        "style": "Texas Republic / Greek Revival",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark & Recorded Texas Historic Landmark",
+        "description": "The oldest surviving building in Houston on its original brick foundation. Built during the Texas Republic era by Nathaniel Kellum, later home to Houston's first public school.",
+        "image_url": "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1972-10-18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3712,
+          29.758
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-annunciation-church",
+      "properties": {
+        "id": "lm-annunciation-church",
+        "name": "Church of the Annunciation",
+        "addr": "1618 TEXAS AVE",
+        "yr": 1869,
+        "architect": "Nicholas J. Clayton",
+        "style": "Romanesque / Gothic Revival",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark",
+        "description": "Houston's oldest continuously operating church parish, constructed with red pressed brick and featuring a soaring 180-foot spire designed by renowned Galveston architect Nicholas Clayton in 1884.",
+        "image_url": "https://images.unsplash.com/photo-1548625361-195982847990?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1975-04-14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3582,
+          29.7578
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-cotton-exchange",
+      "properties": {
+        "id": "lm-cotton-exchange",
+        "name": "1884 Houston Cotton Exchange",
+        "addr": "202 TRAVIS ST",
+        "yr": 1884,
+        "architect": "Eugene T. Heiner",
+        "style": "Victorian Renaissance Revival",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark & NRHP",
+        "description": "Grand headquarters of the Texas cotton trade designed by landmark architect Eugene Heiner. Features red pressed brick, ornate Galveston-carved limestone keystones, and grand ballroom trading floors.",
+        "image_url": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1972-12-12"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3614,
+          29.7634
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-sweeney-coombs",
+      "properties": {
+        "id": "lm-sweeney-coombs",
+        "name": "Sweeney, Coombs & Fredericks Building",
+        "addr": "301 MAIN ST",
+        "yr": 1889,
+        "architect": "George E. Dickey",
+        "style": "Late Victorian / Queen Anne Commercial",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark",
+        "description": "Notable Queen Anne commercial structure on Main Street crowned with a three-story circular corner turret, decorative cast iron, and sunburst panels, home to landmark jewelry firms.",
+        "image_url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1974-06-21"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3628,
+          29.7618
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-market-square",
+      "properties": {
+        "id": "lm-market-square",
+        "name": "Market Square Historic Public Park",
+        "addr": "301 MILAM ST",
+        "yr": 1904,
+        "architect": "George E. Dickey / City of Houston",
+        "style": "Victorian Commercial Civic Plaza",
+        "designation": "LM",
+        "designation_full": "City of Houston Landmark",
+        "description": "Houston's original civic center, site of four successive City Halls and market buildings from 1841 to 1960. Today forms the cultural epicenter of historic downtown.",
+        "image_url": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1983-05-19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3622,
+          29.7628
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-rice-hotel",
+      "properties": {
+        "id": "lm-rice-hotel",
+        "name": "The Rice Hotel",
+        "addr": "909 TEXAS AVE",
+        "yr": 1913,
+        "architect": "Mauran, Russell & Crowell",
+        "style": "Beaux-Arts Classical",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark",
+        "description": "Historic 17-story Beaux-Arts hotel built by Jesse H. Jones on the former capitol grounds of the Republic of Texas. Site of President John F. Kennedy's final public speech on November 21, 1963.",
+        "image_url": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1978-10-06"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3631,
+          29.7601
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-julia-ideson",
+      "properties": {
+        "id": "lm-julia-ideson",
+        "name": "Julia Ideson Building",
+        "addr": "550 MCKINNEY ST",
+        "yr": 1926,
+        "architect": "Ralph Adams Cram & William Ward Watkin",
+        "style": "Spanish Renaissance Revival",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark & NRHP",
+        "description": "Houston's monumental central library from 1926 to 1976, renowned for its Spanish Renaissance cloisters, vibrant bas-relief terracotta, and historic WPA-era art and indoor loggias.",
+        "image_url": "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1977-08-11"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3695,
+          29.7588
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-esperson",
+      "properties": {
+        "id": "lm-esperson",
+        "name": "Niels & Mellie Esperson Buildings",
+        "addr": "808 TRAVIS ST",
+        "yr": 1927,
+        "architect": "John Eberson",
+        "style": "Italian Renaissance Revival & Art Deco",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark",
+        "description": "Houston's only complete Italian Renaissance skyscraper, commissioned by pioneer businesswoman Mellie Esperson in tribute to Niels Esperson. Crowned with an ornate 38-foot circular tempietto.",
+        "image_url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1983-05-19"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.3653,
+          29.7586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-gulf-building",
+      "properties": {
+        "id": "lm-gulf-building",
+        "name": "Gulf Building (JPMorgan Chase)",
+        "addr": "712 MAIN ST",
+        "yr": 1929,
+        "architect": "Alfred C. Finn & Kenneth Franzheim",
+        "style": "Art Deco",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark & National Historic Landmark",
+        "description": "Monumental 36-story Art Deco skyscraper commissioned by Jesse H. Jones for Gulf Oil, standing as Houston's tallest building until 1963. Features 8 grand lobby frescoes depicting Texas history.",
+        "image_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "1983-04-14"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.365,
+          29.7594
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lm-heights-theater",
+      "properties": {
+        "id": "lm-heights-theater",
+        "name": "The Heights Theater",
+        "addr": "379 W 19TH ST",
+        "yr": 1929,
+        "architect": "I.S. Radnor",
+        "style": "Mission Revival / Art Deco",
+        "designation": "PLM",
+        "designation_full": "City of Houston Protected Landmark",
+        "description": "Historic cinema that anchored 19th Street social and cultural life for decades. Expertly restored and repurposed as an intimate live performance venue and preservation showpiece.",
+        "image_url": "https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=800&q=80",
+        "nrhp_date": "2016-11-02"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -95.4025,
+          29.8032
+        ]
+      }
+    }
+  ]
+}

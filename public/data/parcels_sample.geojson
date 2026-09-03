@@ -1,0 +1,1154 @@
+{
+  "type": "FeatureCollection",
+  "name": "houston_parcels_sample",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "0010020000001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.362,
+              29.7595
+            ],
+            [
+              -95.361,
+              29.7595
+            ],
+            [
+              -95.361,
+              29.7603
+            ],
+            [
+              -95.362,
+              29.7603
+            ],
+            [
+              -95.362,
+              29.7595
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000001",
+        "yr": 1925,
+        "addr": "1200 TEXAS AVE",
+        "owner": "HISTORIC TRUST LLC",
+        "use": "RES",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 3.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000002",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3618,
+              29.763
+            ],
+            [
+              -95.361,
+              29.763
+            ],
+            [
+              -95.361,
+              29.7638
+            ],
+            [
+              -95.3618,
+              29.7638
+            ],
+            [
+              -95.3618,
+              29.763
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000002",
+        "yr": 1884,
+        "addr": "202 TRAVIS ST",
+        "owner": "COTTON EXCHANGE BUILDING CORP",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 4.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000003",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3635,
+              29.7597
+            ],
+            [
+              -95.3627,
+              29.7597
+            ],
+            [
+              -95.3627,
+              29.7605
+            ],
+            [
+              -95.3635,
+              29.7605
+            ],
+            [
+              -95.3635,
+              29.7597
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000003",
+        "yr": 1913,
+        "addr": "909 TEXAS AVE",
+        "owner": "RICE LOFTS PARTNERS LLC",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 17.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000004",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3632,
+              29.7614
+            ],
+            [
+              -95.3624,
+              29.7614
+            ],
+            [
+              -95.3624,
+              29.7622
+            ],
+            [
+              -95.3632,
+              29.7622
+            ],
+            [
+              -95.3632,
+              29.7614
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000004",
+        "yr": 1889,
+        "addr": "301 MAIN ST",
+        "owner": "MAIN STREET HERITAGE PROPERTIES",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 3.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000005",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3657,
+              29.7582
+            ],
+            [
+              -95.3649,
+              29.7582
+            ],
+            [
+              -95.3649,
+              29.759
+            ],
+            [
+              -95.3657,
+              29.759
+            ],
+            [
+              -95.3657,
+              29.7582
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000005",
+        "yr": 1927,
+        "addr": "808 TRAVIS ST",
+        "owner": "ESPERSON TOWER HOLDINGS LP",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 32.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000006",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3654,
+              29.759
+            ],
+            [
+              -95.3646,
+              29.759
+            ],
+            [
+              -95.3646,
+              29.7598
+            ],
+            [
+              -95.3654,
+              29.7598
+            ],
+            [
+              -95.3654,
+              29.759
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000006",
+        "yr": 1929,
+        "addr": "712 MAIN ST",
+        "owner": "JPMORGAN CHASE BUILDING TRUST",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 1,
+        "st": 36.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000007",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.365,
+              29.76
+            ],
+            [
+              -95.3642,
+              29.76
+            ],
+            [
+              -95.3642,
+              29.7608
+            ],
+            [
+              -95.365,
+              29.7608
+            ],
+            [
+              -95.365,
+              29.76
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000007",
+        "yr": 1982,
+        "addr": "1100 LOUISIANA ST",
+        "owner": "MODERN METRO COMMERCE TOWER",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 0,
+        "st": 55.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0010020000008",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3628,
+              29.7604
+            ],
+            [
+              -95.362,
+              29.7604
+            ],
+            [
+              -95.362,
+              29.7612
+            ],
+            [
+              -95.3628,
+              29.7612
+            ],
+            [
+              -95.3628,
+              29.7604
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0010020000008",
+        "yr": 2004,
+        "addr": "500 TEXAS AVE",
+        "owner": "DOWNTOWN PARKING CORP",
+        "use": "COM",
+        "dist": "Downtown",
+        "contrib": 0,
+        "st": 6.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.375,
+              29.766
+            ],
+            [
+              -95.3742,
+              29.766
+            ],
+            [
+              -95.3742,
+              29.7668
+            ],
+            [
+              -95.375,
+              29.7668
+            ],
+            [
+              -95.375,
+              29.766
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000001",
+        "yr": 1885,
+        "addr": "1812 KANE ST",
+        "owner": "MARTINEZ CARLOS & ELENA",
+        "use": "RES",
+        "dist": "Old Sixth Ward",
+        "contrib": 1,
+        "st": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000002",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.376,
+              29.767
+            ],
+            [
+              -95.3752,
+              29.767
+            ],
+            [
+              -95.3752,
+              29.7678
+            ],
+            [
+              -95.376,
+              29.7678
+            ],
+            [
+              -95.376,
+              29.767
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000002",
+        "yr": 1892,
+        "addr": "1905 DECATUR ST",
+        "owner": "SCHULTZ HISTORIC HOMES TRUST",
+        "use": "RES",
+        "dist": "Old Sixth Ward",
+        "contrib": 1,
+        "st": 1.5
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000003",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.377,
+              29.768
+            ],
+            [
+              -95.3762,
+              29.768
+            ],
+            [
+              -95.3762,
+              29.7688
+            ],
+            [
+              -95.377,
+              29.7688
+            ],
+            [
+              -95.377,
+              29.768
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000003",
+        "yr": 1902,
+        "addr": "2104 LUBBOCK ST",
+        "owner": "WILLIAMS SARAH J",
+        "use": "RES",
+        "dist": "Old Sixth Ward",
+        "contrib": 1,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000004",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3735,
+              29.7655
+            ],
+            [
+              -95.3727,
+              29.7655
+            ],
+            [
+              -95.3727,
+              29.7663
+            ],
+            [
+              -95.3735,
+              29.7663
+            ],
+            [
+              -95.3735,
+              29.7655
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000004",
+        "yr": 1898,
+        "addr": "810 SILVER ST",
+        "owner": "OLD SIXTH WARD RESTORATION LLC",
+        "use": "RES",
+        "dist": "Old Sixth Ward",
+        "contrib": 1,
+        "st": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000005",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3755,
+              29.7662
+            ],
+            [
+              -95.3747,
+              29.7662
+            ],
+            [
+              -95.3747,
+              29.767
+            ],
+            [
+              -95.3755,
+              29.767
+            ],
+            [
+              -95.3755,
+              29.7662
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000005",
+        "yr": 2018,
+        "addr": "1918 KANE ST",
+        "owner": "URBAN INFILL DEVELOPERS LP",
+        "use": "RES",
+        "dist": "Old Sixth Ward",
+        "contrib": 0,
+        "st": 3.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0020040000006",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3765,
+              29.7672
+            ],
+            [
+              -95.3757,
+              29.7672
+            ],
+            [
+              -95.3757,
+              29.768
+            ],
+            [
+              -95.3765,
+              29.768
+            ],
+            [
+              -95.3765,
+              29.7672
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0020040000006",
+        "yr": 0,
+        "addr": "2000 DECATUR ST",
+        "owner": "SIXTH WARD COMMUNITY GARDEN",
+        "use": "VAC",
+        "dist": "Old Sixth Ward",
+        "contrib": 0,
+        "st": 0.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.398,
+              29.786
+            ],
+            [
+              -95.3972,
+              29.786
+            ],
+            [
+              -95.3972,
+              29.7868
+            ],
+            [
+              -95.398,
+              29.7868
+            ],
+            [
+              -95.398,
+              29.786
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000001",
+        "yr": 1910,
+        "addr": "412 HARVARD ST",
+        "owner": "HARRISON ROBERT & CLAIRE",
+        "use": "RES",
+        "dist": "Heights South",
+        "contrib": 1,
+        "st": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000002",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.397,
+              29.7875
+            ],
+            [
+              -95.396,
+              29.7875
+            ],
+            [
+              -95.396,
+              29.7885
+            ],
+            [
+              -95.397,
+              29.7885
+            ],
+            [
+              -95.397,
+              29.7875
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000002",
+        "yr": 1915,
+        "addr": "530 HEIGHTS BLVD",
+        "owner": "HEIGHTS PRESERVATION PROPERTIES",
+        "use": "RES",
+        "dist": "Heights South",
+        "contrib": 1,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000003",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.396,
+              29.789
+            ],
+            [
+              -95.3952,
+              29.789
+            ],
+            [
+              -95.3952,
+              29.7898
+            ],
+            [
+              -95.396,
+              29.7898
+            ],
+            [
+              -95.396,
+              29.789
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000003",
+        "yr": 1920,
+        "addr": "615 OXFORD ST",
+        "owner": "BEAUCHAMP FAMILY TRUST",
+        "use": "RES",
+        "dist": "Heights South",
+        "contrib": 1,
+        "st": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000004",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3995,
+              29.7905
+            ],
+            [
+              -95.3985,
+              29.7905
+            ],
+            [
+              -95.3985,
+              29.7915
+            ],
+            [
+              -95.3995,
+              29.7915
+            ],
+            [
+              -95.3995,
+              29.7905
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000004",
+        "yr": 1924,
+        "addr": "722 YALE ST",
+        "owner": "HEIGHTS CAFE HOLDINGS",
+        "use": "COM",
+        "dist": "Heights South",
+        "contrib": 1,
+        "st": 1.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000005",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3978,
+              29.7915
+            ],
+            [
+              -95.397,
+              29.7915
+            ],
+            [
+              -95.397,
+              29.7923
+            ],
+            [
+              -95.3978,
+              29.7923
+            ],
+            [
+              -95.3978,
+              29.7915
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000005",
+        "yr": 2021,
+        "addr": "802 HARVARD ST",
+        "owner": "MODERN HEIGHTS HOMES LLC",
+        "use": "RES",
+        "dist": "Heights South",
+        "contrib": 0,
+        "st": 2.5
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0030060000006",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3968,
+              29.7925
+            ],
+            [
+              -95.3958,
+              29.7925
+            ],
+            [
+              -95.3958,
+              29.7935
+            ],
+            [
+              -95.3968,
+              29.7935
+            ],
+            [
+              -95.3968,
+              29.7925
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0030060000006",
+        "yr": 1928,
+        "addr": "910 HEIGHTS BLVD",
+        "owner": "JOHNSON DAVID L",
+        "use": "RES",
+        "dist": "Heights South",
+        "contrib": 1,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0040080000001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.402,
+              29.726
+            ],
+            [
+              -95.401,
+              29.726
+            ],
+            [
+              -95.401,
+              29.727
+            ],
+            [
+              -95.402,
+              29.727
+            ],
+            [
+              -95.402,
+              29.726
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0040080000001",
+        "yr": 1924,
+        "addr": "1610 NORTH BLVD",
+        "owner": "STERLING HISTORIC RESIDENCE TRUST",
+        "use": "RES",
+        "dist": "Boulevard Oaks",
+        "contrib": 1,
+        "st": 2.5
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0040080000002",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.4005,
+              29.7245
+            ],
+            [
+              -95.3995,
+              29.7245
+            ],
+            [
+              -95.3995,
+              29.7255
+            ],
+            [
+              -95.4005,
+              29.7255
+            ],
+            [
+              -95.4005,
+              29.7245
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0040080000002",
+        "yr": 1926,
+        "addr": "1725 SOUTH BLVD",
+        "owner": "BLAFFER ARTHUR C & MIRIAM",
+        "use": "RES",
+        "dist": "Boulevard Oaks",
+        "contrib": 1,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0040080000003",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3985,
+              29.727
+            ],
+            [
+              -95.3975,
+              29.727
+            ],
+            [
+              -95.3975,
+              29.728
+            ],
+            [
+              -95.3985,
+              29.728
+            ],
+            [
+              -95.3985,
+              29.727
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0040080000003",
+        "yr": 1930,
+        "addr": "1802 VASSAR ST",
+        "owner": "FARISH JANE M",
+        "use": "RES",
+        "dist": "Boulevard Oaks",
+        "contrib": 1,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0040080000004",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.4035,
+              29.724
+            ],
+            [
+              -95.4025,
+              29.724
+            ],
+            [
+              -95.4025,
+              29.725
+            ],
+            [
+              -95.4035,
+              29.725
+            ],
+            [
+              -95.4035,
+              29.724
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0040080000004",
+        "yr": 1995,
+        "addr": "1515 SOUTH BLVD",
+        "owner": "NEW OAKS VENTURES LLC",
+        "use": "RES",
+        "dist": "Boulevard Oaks",
+        "contrib": 0,
+        "st": 2.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0050100000001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.391,
+              29.748
+            ],
+            [
+              -95.39,
+              29.748
+            ],
+            [
+              -95.39,
+              29.7488
+            ],
+            [
+              -95.391,
+              29.7488
+            ],
+            [
+              -95.391,
+              29.748
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0050100000001",
+        "yr": 1956,
+        "addr": "2400 MONTROSE BLVD",
+        "owner": "MIDTOWN COMMERCIAL VENTURES",
+        "use": "COM",
+        "dist": null,
+        "contrib": -1,
+        "st": 4.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0050100000002",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.381,
+              29.742
+            ],
+            [
+              -95.38,
+              29.742
+            ],
+            [
+              -95.38,
+              29.7428
+            ],
+            [
+              -95.381,
+              29.7428
+            ],
+            [
+              -95.381,
+              29.742
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0050100000002",
+        "yr": 1968,
+        "addr": "3100 MAIN ST",
+        "owner": "MIDTOWN FINANCIAL CENTER LP",
+        "use": "COM",
+        "dist": null,
+        "contrib": -1,
+        "st": 8.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0050100000003",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.409,
+              29.775
+            ],
+            [
+              -95.408,
+              29.775
+            ],
+            [
+              -95.408,
+              29.7758
+            ],
+            [
+              -95.409,
+              29.7758
+            ],
+            [
+              -95.409,
+              29.775
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0050100000003",
+        "yr": 2015,
+        "addr": "1500 SHEPHERD DR",
+        "owner": "HEIGHTS GATEWAY APARTMENTS",
+        "use": "RES",
+        "dist": null,
+        "contrib": -1,
+        "st": 4.0
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "0050100000004",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -95.3718,
+              29.7575
+            ],
+            [
+              -95.3708,
+              29.7575
+            ],
+            [
+              -95.3708,
+              29.7585
+            ],
+            [
+              -95.3718,
+              29.7585
+            ],
+            [
+              -95.3718,
+              29.7575
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "0050100000004",
+        "yr": 1847,
+        "addr": "212 DALLAS ST",
+        "owner": "THE HERITAGE SOCIETY AT SAM HOUSTON PARK",
+        "use": "VAC",
+        "dist": null,
+        "contrib": -1,
+        "st": 2.0
+      }
+    }
+  ]
+}
