@@ -63,6 +63,14 @@ vi.mock("maplibre-gl", () => {
       paintProperties.get(layerId)![property] = value;
     });
 
+    setLayoutProperty = vi.fn((layerId: string, property: string, value: any) => {
+      const layer = layers.get(layerId);
+      if (layer) {
+        if (!layer.layout) layer.layout = {};
+        layer.layout[property] = value;
+      }
+    });
+
     getCanvas = vi.fn(() => this.canvas);
 
     queryRenderedFeatures = vi.fn(() => []);
@@ -401,5 +409,99 @@ describe("MapView component", () => {
 
     unmount();
     expect(mockMapInstance.remove).toHaveBeenCalled();
+  });
+
+  it("registers historic raster source and layer on map load", () => {
+    render(<MapView />);
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    expect(mockMapInstance.addSource).toHaveBeenCalledWith(
+      "historic-raster-source",
+      expect.objectContaining({
+        type: "raster",
+        tiles: expect.any(Array),
+      })
+    );
+
+    expect(mockMapInstance.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "historic-raster-layer",
+        type: "raster",
+        source: "historic-raster-source",
+      })
+    );
+  });
+
+  it("toggles historic raster layer visibility and opacity when showHistoricSwipe changes", () => {
+    const { rerender } = render(<MapView showHistoricSwipe={false} />);
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    // Rerender with showHistoricSwipe = true
+    rerender(<MapView showHistoricSwipe={true} />);
+
+    expect(mockMapInstance.setLayoutProperty).toHaveBeenCalledWith(
+      "historic-raster-layer",
+      "visibility",
+      "visible"
+    );
+
+    expect(mockMapInstance.setPaintProperty).toHaveBeenCalledWith(
+      "historic-raster-layer",
+      "raster-opacity",
+      expect.any(Number)
+    );
+
+    // Rerender back to false
+    rerender(<MapView showHistoricSwipe={false} />);
+
+    expect(mockMapInstance.setLayoutProperty).toHaveBeenCalledWith(
+      "historic-raster-layer",
+      "visibility",
+      "none"
+    );
+  });
+
+  it("renders historic map overlay container with clipPath according to swipePosition", () => {
+    const { rerender } = render(
+      <MapView showHistoricSwipe={true} swipePosition={65} />
+    );
+
+    const overlay = screen.getByTestId("historic-map-overlay");
+    expect(overlay).toBeInTheDocument();
+    expect(overlay.style.clipPath).toBe(
+      "polygon(65% 0, 100% 0, 100% 100%, 65% 100%)"
+    );
+
+    rerender(<MapView showHistoricSwipe={true} swipePosition={30} />);
+    expect(overlay.style.clipPath).toBe(
+      "polygon(30% 0, 100% 0, 100% 100%, 30% 100%)"
+    );
+  });
+
+  it("updates historic raster source when historicLayerId changes", () => {
+    const mockSetTiles = vi.fn();
+    const { rerender } = render(<MapView historicLayerId="usgs-1915" />);
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    const source = mockMapInstance.getSource("historic-raster-source");
+    source.setTiles = mockSetTiles;
+
+    rerender(<MapView historicLayerId="sanborn-1924" />);
+
+    expect(mockSetTiles).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.stringContaining("Houston_1924_Sanborn")])
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Layers } from "lucide-react";
 import MapView, {
   ParcelProperties,
   LandmarkProperties,
@@ -6,6 +7,7 @@ import MapView, {
 } from "./components/Map/MapView";
 import { TimelineBar } from "./components/Timeline/TimelineBar";
 import { PropertyDrawer } from "./components/Drawer/PropertyDrawer";
+import { HistoricSwipe } from "./components/Map/HistoricSwipe";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 
 export default function App() {
@@ -22,6 +24,10 @@ export default function App() {
     useState<LandmarkProperties | null>(null);
   const [selectedDistrict, setSelectedDistrict] =
     useState<DistrictProperties | null>(null);
+
+  const [showHistoricSwipe, setShowHistoricSwipe] = useState(false);
+  const [swipePosition, setSwipePosition] = useState(50);
+  const [historicLayerId, setHistoricLayerId] = useState("usgs-1915");
 
   const handleSelectParcel = (parcel: ParcelProperties | null) => {
     setSelectedParcel(parcel);
@@ -79,6 +85,25 @@ export default function App() {
           )}
         </div>
         <div className="flex items-center gap-3 text-xs text-stone-300">
+          <button
+            type="button"
+            onClick={() => setShowHistoricSwipe((prev) => !prev)}
+            aria-label={
+              showHistoricSwipe
+                ? "Exit historic map swipe"
+                : "Compare historic map"
+            }
+            aria-pressed={showHistoricSwipe}
+            data-testid="historic-swipe-toggle-btn"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              showHistoricSwipe
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.25)]"
+                : "bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span>{showHistoricSwipe ? "Exit Swipe" : "Compare 1915 Map"}</span>
+          </button>
           <label className="flex items-center gap-1 font-mono">
             <span>From:</span>
             <input
@@ -116,7 +141,21 @@ export default function App() {
           onSelectParcel={handleSelectParcel}
           onSelectLandmark={handleSelectLandmark}
           onSelectDistrict={setSelectedDistrict}
+          showHistoricSwipe={showHistoricSwipe}
+          swipePosition={swipePosition}
+          historicLayerId={historicLayerId}
         />
+
+        {/* Draggable Split-Screen Historic Map Swipe Divider */}
+        {showHistoricSwipe && (
+          <HistoricSwipe
+            position={swipePosition}
+            onPositionChange={setSwipePosition}
+            onToggle={setShowHistoricSwipe}
+            layerId={historicLayerId}
+            onLayerChange={setHistoricLayerId}
+          />
+        )}
 
         {/* Responsive Property Inspection Drawer & Historic Badges */}
         <PropertyDrawer

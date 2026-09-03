@@ -41,4 +41,50 @@ describe("App", () => {
     render(<App />);
     expect(screen.queryByTestId("property-drawer")).not.toBeInTheDocument();
   });
+
+  it("toggles HistoricSwipe comparison mode when clicking the Compare 1915 Map button", () => {
+    render(<App />);
+
+    // Initially closed
+    expect(
+      screen.queryByTestId("historic-swipe-wrapper")
+    ).not.toBeInTheDocument();
+
+    const toggleBtn = screen.getByTestId("historic-swipe-toggle-btn");
+    expect(toggleBtn).toHaveTextContent("Compare 1915 Map");
+    expect(toggleBtn).toHaveAttribute("aria-pressed", "false");
+
+    // Click to activate
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByTestId("historic-swipe-wrapper")).toBeInTheDocument();
+    expect(
+      screen.getByRole("slider", { name: /Map comparison swipe divider/i })
+    ).toBeInTheDocument();
+    expect(toggleBtn).toHaveTextContent("Exit Swipe");
+    expect(toggleBtn).toHaveAttribute("aria-pressed", "true");
+
+    // Click to deactivate
+    fireEvent.click(toggleBtn);
+    expect(
+      screen.queryByTestId("historic-swipe-wrapper")
+    ).not.toBeInTheDocument();
+    expect(toggleBtn).toHaveTextContent("Compare 1915 Map");
+  });
+
+  it("closes HistoricSwipe when clicking the close button inside HistoricSwipe control bar", () => {
+    render(<App />);
+
+    const toggleBtn = screen.getByTestId("historic-swipe-toggle-btn");
+    fireEvent.click(toggleBtn);
+
+    expect(screen.getByTestId("historic-swipe-wrapper")).toBeInTheDocument();
+
+    const closeBtn = screen.getByTestId("historic-swipe-close-btn");
+    fireEvent.click(closeBtn);
+
+    expect(
+      screen.queryByTestId("historic-swipe-wrapper")
+    ).not.toBeInTheDocument();
+  });
 });
