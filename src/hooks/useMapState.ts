@@ -7,6 +7,7 @@ export interface MapState {
   yearMin: number;
   yearMax: number;
   parcelId: string | null;
+  landmarkId?: string | null;
   swipe: boolean;
 }
 
@@ -17,6 +18,7 @@ export const DEFAULT_MAP_STATE: MapState = {
   yearMin: 1836,
   yearMax: 2026,
   parcelId: null,
+  landmarkId: null,
   swipe: false,
 };
 
@@ -147,6 +149,16 @@ export function parseMapState(
     parcelId = trimmed.length > 0 ? trimmed : null;
   }
 
+  // Parse landmark ID
+  let landmarkId = fallback.landmarkId ?? null;
+  const rawLandmark =
+    searchParams.get("landmark") ||
+    searchParams.get("landmarkId");
+  if (rawLandmark !== null) {
+    const trimmed = rawLandmark.trim();
+    landmarkId = trimmed.length > 0 ? trimmed : null;
+  }
+
   // Parse swipe boolean
   let swipe = fallback.swipe;
   const rawSwipe = searchParams.get("swipe");
@@ -162,6 +174,7 @@ export function parseMapState(
     yearMin,
     yearMax,
     parcelId,
+    landmarkId,
     swipe,
   };
 }
@@ -205,6 +218,10 @@ export function serializeMapState(state: Partial<MapState>): string {
     params.set("parcel", state.parcelId.trim());
   }
 
+  if (state.landmarkId && state.landmarkId.trim()) {
+    params.set("landmark", state.landmarkId.trim());
+  }
+
   params.set("swipe", state.swipe ? "1" : "0");
 
   return `#${zoomStr}/${latStr}/${lngStr}?${params.toString()}`;
@@ -234,6 +251,7 @@ export interface UseMapStateOptions {
   yearMin?: number;
   yearMax?: number;
   selectedParcelId?: string | null;
+  selectedLandmarkId?: string | null;
   showHistoricSwipe?: boolean;
   onPopState?: (state: MapState) => void;
 }
@@ -248,6 +266,7 @@ export interface UseMapStateReturn {
   setYearMin: (yearMin: number) => void;
   setYearMax: (yearMax: number) => void;
   setParcelId: (parcelId: string | null) => void;
+  setLandmarkId: (landmarkId: string | null) => void;
   setSwipe: (swipe: boolean) => void;
   syncToUrl: (override?: Partial<MapState>) => void;
 }
@@ -264,6 +283,7 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
     yearMin,
     yearMax,
     selectedParcelId,
+    selectedLandmarkId,
     showHistoricSwipe,
     onPopState,
   } = options || {};
@@ -287,6 +307,7 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
       yearMin !== undefined ||
       yearMax !== undefined ||
       selectedParcelId !== undefined ||
+      selectedLandmarkId !== undefined ||
       showHistoricSwipe !== undefined
     ) {
       setMapState((prev) => {
@@ -294,6 +315,8 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
         const nextMax = yearMax !== undefined ? yearMax : prev.yearMax;
         const nextParcel =
           selectedParcelId !== undefined ? selectedParcelId : prev.parcelId;
+        const nextLandmark =
+          selectedLandmarkId !== undefined ? selectedLandmarkId : prev.landmarkId;
         const nextSwipe =
           showHistoricSwipe !== undefined ? showHistoricSwipe : prev.swipe;
 
@@ -301,6 +324,7 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
           nextMin === prev.yearMin &&
           nextMax === prev.yearMax &&
           nextParcel === prev.parcelId &&
+          nextLandmark === prev.landmarkId &&
           nextSwipe === prev.swipe
         ) {
           return prev;
@@ -311,11 +335,12 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
           yearMin: nextMin,
           yearMax: nextMax,
           parcelId: nextParcel,
+          landmarkId: nextLandmark,
           swipe: nextSwipe,
         };
       });
     }
-  }, [yearMin, yearMax, selectedParcelId, showHistoricSwipe]);
+  }, [yearMin, yearMax, selectedParcelId, selectedLandmarkId, showHistoricSwipe]);
 
   // Performs actual update to window history / hash
   const commitUrl = useCallback((targetState: MapState) => {
@@ -432,6 +457,13 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
     });
   }, []);
 
+  const setLandmarkId = useCallback((id: string | null) => {
+    setMapState((prev) => {
+      if (prev.landmarkId === id) return prev;
+      return { ...prev, landmarkId: id };
+    });
+  }, []);
+
   const setSwipe = useCallback((swipe: boolean) => {
     setMapState((prev) => {
       if (prev.swipe === swipe) return prev;
@@ -457,6 +489,7 @@ export function useMapState(options?: UseMapStateOptions): UseMapStateReturn {
     setYearMin,
     setYearMax,
     setParcelId,
+    setLandmarkId,
     setSwipe,
     syncToUrl,
   };

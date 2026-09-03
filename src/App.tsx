@@ -71,12 +71,22 @@ export default function App() {
     yearMin: timeline.yearMin,
     yearMax: timeline.yearMax,
     selectedParcelId: selectedParcel?.id ?? null,
+    selectedLandmarkId: selectedLandmark?.id ?? null,
     showHistoricSwipe: showHistoricSwipe,
     onPopState: (poppedState) => {
       timeline.setYearRange(poppedState.yearMin, poppedState.yearMax);
       setShowHistoricSwipe(poppedState.swipe);
 
-      if (poppedState.parcelId) {
+      if (poppedState.landmarkId) {
+        setSelectedLandmark({
+          id: poppedState.landmarkId,
+          name: poppedState.landmarkId.replace(/[-_]/g, " "),
+          addr: "City of Houston Landmark",
+          yr: 1910,
+          designation: "PLM",
+        });
+        setSelectedParcel(null);
+      } else if (poppedState.parcelId) {
         const found = fullSampleParcels.find(
           (p) => p.id === poppedState.parcelId
         );
@@ -96,6 +106,7 @@ export default function App() {
         setSelectedLandmark(null);
       } else {
         setSelectedParcel(null);
+        setSelectedLandmark(null);
       }
 
       if (mapRef.current && typeof mapRef.current.flyTo === "function") {
@@ -221,6 +232,19 @@ export default function App() {
         // Fallback gracefully in environments without fetch
       });
   }, [initialMapState.parcelId]);
+
+  // Initial landmark hydration from URL deep link
+  useEffect(() => {
+    if (initialMapState.landmarkId && !selectedLandmark) {
+      setSelectedLandmark({
+        id: initialMapState.landmarkId,
+        name: initialMapState.landmarkId.replace(/[-_]/g, " "),
+        addr: "City of Houston Landmark",
+        yr: 1910,
+        designation: "PLM",
+      });
+    }
+  }, [initialMapState.landmarkId, selectedLandmark]);
 
   const visibleStructureCount =
     sampleParcels.length > 0

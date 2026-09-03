@@ -293,7 +293,9 @@ export const TimelineBar: React.FC<TimelineBarProps> = ({
             {/* Active Range Fill */}
             <div
               data-testid="range-slider-fill"
-              className="absolute top-0 bottom-0 rounded-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 transition-[width,left] duration-75"
+              className={`absolute top-0 bottom-0 rounded-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 ${
+                isPlaying && speed === "5x" ? "transition-none" : "transition-[width,left] duration-75"
+              }`}
               style={{
                 left: `${minPercent}%`,
                 width: `${fillWidth}%`,

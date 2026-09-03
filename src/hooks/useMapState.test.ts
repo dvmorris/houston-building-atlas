@@ -57,6 +57,7 @@ describe("useMapState", () => {
         yearMin: 1900,
         yearMax: 1930,
         parcelId: "0010020000001",
+        landmarkId: null,
         swipe: false,
       });
     });
@@ -235,6 +236,7 @@ describe("useMapState", () => {
         yearMin: 1900,
         yearMax: 1930,
         parcelId: "0010020000001",
+        landmarkId: null,
         swipe: false,
       };
 
@@ -254,6 +256,7 @@ describe("useMapState", () => {
         yearMin: 1880,
         yearMax: 1914,
         parcelId: null,
+        landmarkId: null,
         swipe: true,
       };
 
@@ -279,6 +282,7 @@ describe("useMapState", () => {
         yearMin: 1900,
         yearMax: 1930,
         parcelId: "0010020000001",
+        landmarkId: null,
         swipe: false,
       });
       expect(result.current.initialState).toEqual(result.current.mapState);
@@ -401,6 +405,7 @@ describe("useMapState", () => {
         yearMin: 1920,
         yearMax: 1940,
         parcelId: "777",
+        landmarkId: null,
         swipe: true,
       });
       expect(onPopState).toHaveBeenCalledWith(result.current.mapState);
@@ -436,6 +441,16 @@ describe("useMapState", () => {
         "",
         expect.stringContaining("#16/29.7521/-95.3621?yr_min=1900&yr_max=1930")
       );
+    });
+
+    it("parses and serializes landmark identifier in URL state", () => {
+      const url = "http://localhost:5173/#17/29.7588/-95.3695?landmark=lm-julia-ideson";
+      const state = parseMapState(url);
+
+      expect(state.landmarkId).toBe("lm-julia-ideson");
+
+      const serialized = serializeMapState(state);
+      expect(serialized).toContain("landmark=lm-julia-ideson");
     });
   });
 });
