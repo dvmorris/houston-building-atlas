@@ -235,6 +235,13 @@ export const MapView: React.FC<MapViewProps> = ({
   const historicLayerIdRef = useRef(historicLayerId);
   historicLayerIdRef.current = historicLayerId;
 
+  const swipePositionRef = useRef(swipePosition);
+  swipePositionRef.current = swipePosition;
+
+  useEffect(() => {
+    swipePositionRef.current = swipePosition;
+  }, [swipePosition]);
+
   // 1. Initialize MapLibre instance and PMTiles protocol
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -299,12 +306,10 @@ export const MapView: React.FC<MapViewProps> = ({
         type: "raster",
         source: "historic-raster-source",
         layout: {
-          visibility: showHistoricSwipeRef.current ? "visible" : "none",
+          visibility: "none",
         },
         paint: {
-          "raster-opacity": showHistoricSwipeRef.current
-            ? (historicLayer.defaultOpacity ?? 0.9)
-            : 0,
+          "raster-opacity": 0,
         },
       });
 
@@ -564,8 +569,21 @@ export const MapView: React.FC<MapViewProps> = ({
         });
       });
 
+      // Check if click point falls on the historic (right) side of the split-screen divider
+      const isClickOnHistoricSide = (point?: { x: number; y: number }): boolean => {
+        if (!showHistoricSwipeRef.current || !containerRef.current || !point)
+          return false;
+        const width =
+          containerRef.current.clientWidth ||
+          containerRef.current.getBoundingClientRect().width;
+        if (width <= 0) return false;
+        const dividerX = (swipePositionRef.current / 100) * width;
+        return point.x > dividerX;
+      };
+
       // Landmark Click: Listen exclusively on landmarks-outer to prevent duplicate callbacks
       map.on("click", "landmarks-outer", (e) => {
+        if (isClickOnHistoricSide(e.point)) return;
         if (!e.features || e.features.length === 0) return;
         const feature = e.features[0];
         onSelectLandmarkRef.current?.(
@@ -575,6 +593,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
       // Parcel Click
       map.on("click", "parcels-fill", (e) => {
+        if (isClickOnHistoricSide(e.point)) return;
         const landmarkHits = map.queryRenderedFeatures(e.point, {
           layers: ["landmarks-outer", "landmarks-inner"],
         });
@@ -589,6 +608,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
       // District Click (when not clicking parcel or landmark)
       map.on("click", "historic-districts-fill", (e) => {
+        if (isClickOnHistoricSide(e.point)) return;
         const higherFeatures = map.queryRenderedFeatures(e.point, {
           layers: ["landmarks-outer", "landmarks-inner", "parcels-fill"],
         });
@@ -603,6 +623,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
       // Background Map Click (Deselect)
       map.on("click", (e) => {
+        if (isClickOnHistoricSide(e.point)) return;
         const anyFeatures = map.queryRenderedFeatures(e.point, {
           layers: [
             "landmarks-outer",
@@ -680,23 +701,23 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [selectedLandmarkId, mapLoaded]);
 
   // 5. Historic Raster Layer Visibility & Opacity
+  // Primary map keeps historic-raster-layer hidden during swipe mode so modern cartography is visible
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
     if (map.getLayer("historic-raster-layer")) {
-      const layer = getHistoricLayer(historicLayerId);
       if (typeof map.setLayoutProperty === "function") {
         map.setLayoutProperty(
           "historic-raster-layer",
           "visibility",
-          showHistoricSwipe ? "visible" : "none"
+          "none"
         );
       }
       if (typeof map.setPaintProperty === "function") {
         map.setPaintProperty(
           "historic-raster-layer",
           "raster-opacity",
-          showHistoricSwipe ? (layer.defaultOpacity ?? 0.9) : 0
+          0
         );
       }
     }
@@ -719,6 +740,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const secondaryMapRef = useRef<maplibregl.Map | null>(null);
 
   useEffect(() => {
+    showHistoricSwipeRef.current = showHistoricSwipe;
     if (!showHistoricSwipe || !historicContainerRef.current || !mapRef.current) {
       if (secondaryMapRef.current) {
         secondaryMapRef.current.remove();
@@ -727,13 +749,19 @@ export const MapView: React.FC<MapViewProps> = ({
       return;
     }
 
-    // Do not initialize secondary map in node/vitest environment to preserve primary mockMapInstance
-    const isTest =
-      typeof process !== "undefined" && process.env?.NODE_ENV === "test";
-    if (isTest) return;
-
     const primary = mapRef.current;
     const currentHistoric = getHistoricLayer(historicLayerId);
+
+    const center: maplibregl.LngLatLike =
+      typeof primary.getCenter === "function"
+        ? primary.getCenter()
+        : ([centerLng, centerLat] as [number, number]);
+    const zoom =
+      typeof primary.getZoom === "function" ? primary.getZoom() : initialZoom;
+    const bearing =
+      typeof primary.getBearing === "function" ? primary.getBearing() : 0;
+    const pitch =
+      typeof primary.getPitch === "function" ? primary.getPitch() : 0;
 
     const secMap = new maplibregl.Map({
       container: historicContainerRef.current,
@@ -753,10 +781,10 @@ export const MapView: React.FC<MapViewProps> = ({
           },
         ],
       },
-      center: primary.getCenter(),
-      zoom: primary.getZoom(),
-      bearing: primary.getBearing(),
-      pitch: primary.getPitch(),
+      center,
+      zoom,
+      bearing,
+      pitch,
       interactive: false,
       attributionControl: false,
     });
@@ -764,11 +792,18 @@ export const MapView: React.FC<MapViewProps> = ({
     secondaryMapRef.current = secMap;
 
     const syncCamera = () => {
+      if (typeof secMap.jumpTo !== "function") return;
       secMap.jumpTo({
-        center: primary.getCenter(),
-        zoom: primary.getZoom(),
-        bearing: primary.getBearing(),
-        pitch: primary.getPitch(),
+        center:
+          typeof primary.getCenter === "function"
+            ? primary.getCenter()
+            : ([centerLng, centerLat] as [number, number]),
+        zoom:
+          typeof primary.getZoom === "function" ? primary.getZoom() : initialZoom,
+        bearing:
+          typeof primary.getBearing === "function" ? primary.getBearing() : 0,
+        pitch:
+          typeof primary.getPitch === "function" ? primary.getPitch() : 0,
       });
     };
 
@@ -788,6 +823,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const resizeObserver = new ResizeObserver(() => {
       mapRef.current?.resize();
+      secondaryMapRef.current?.resize();
     });
     resizeObserver.observe(container);
 

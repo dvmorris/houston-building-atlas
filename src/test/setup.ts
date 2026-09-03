@@ -40,6 +40,11 @@ vi.mock("maplibre-gl", () => {
     setPaintProperty = vi.fn();
     setLayoutProperty = vi.fn();
     getCanvas = vi.fn(() => ({ style: { cursor: "" } }));
+    getCenter = vi.fn(() => ({ lng: -95.362, lat: 29.759 }));
+    getZoom = vi.fn(() => 14.5);
+    getBearing = vi.fn(() => 0);
+    getPitch = vi.fn(() => 0);
+    jumpTo = vi.fn();
     queryRenderedFeatures = vi.fn(() => []);
     resize = vi.fn();
     remove = vi.fn();

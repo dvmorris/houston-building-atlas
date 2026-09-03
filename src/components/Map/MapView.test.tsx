@@ -10,8 +10,9 @@ class MockResizeObserver {
 }
 global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
-// Store current mock map instance for test assertions
+// Store current mock map instances for test assertions
 let mockMapInstance: any = null;
+let mockSecondaryMapInstance: any = null;
 const eventListeners = new Map<string, Array<(e: any) => void>>();
 const sources = new Map<string, any>();
 const layers = new Map<string, any>();
@@ -27,7 +28,17 @@ vi.mock("maplibre-gl", () => {
       this.options = options;
       this.container = options.container;
       this.canvas = { style: { cursor: "" } };
-      mockMapInstance = this;
+
+      const isSecondary =
+        options.container?.getAttribute?.("data-testid") ===
+          "historic-secondary-map" ||
+        options.container?.dataset?.testid === "historic-secondary-map";
+
+      if (isSecondary) {
+        mockSecondaryMapInstance = this;
+      } else {
+        mockMapInstance = this;
+      }
     }
 
     on = vi.fn((event: string, ...args: any[]) => {
@@ -40,7 +51,13 @@ vi.mock("maplibre-gl", () => {
       eventListeners.get(key)!.push(callback);
     });
 
-    off = vi.fn();
+    off = vi.fn((event: string, callback: any) => {
+      const listeners = eventListeners.get(event);
+      if (listeners && callback) {
+        const idx = listeners.indexOf(callback);
+        if (idx !== -1) listeners.splice(idx, 1);
+      }
+    });
 
     addControl = vi.fn();
 
@@ -73,6 +90,12 @@ vi.mock("maplibre-gl", () => {
 
     getCanvas = vi.fn(() => this.canvas);
 
+    getCenter = vi.fn(() => ({ lng: -95.362, lat: 29.759 }));
+    getZoom = vi.fn(() => 14.5);
+    getBearing = vi.fn(() => 0);
+    getPitch = vi.fn(() => 0);
+    jumpTo = vi.fn();
+
     queryRenderedFeatures = vi.fn(() => []);
 
     resize = vi.fn();
@@ -101,6 +124,7 @@ vi.mock("maplibre-gl", () => {
 describe("MapView component", () => {
   beforeEach(() => {
     mockMapInstance = null;
+    mockSecondaryMapInstance = null;
     eventListeners.clear();
     sources.clear();
     layers.clear();
@@ -436,7 +460,7 @@ describe("MapView component", () => {
     );
   });
 
-  it("toggles historic raster layer visibility and opacity when showHistoricSwipe changes", () => {
+  it("keeps historic raster layer hidden on primary map during swipe mode to preserve modern cartography", () => {
     const { rerender } = render(<MapView showHistoricSwipe={false} />);
 
     const loadCallbacks = eventListeners.get("load") || [];
@@ -444,23 +468,20 @@ describe("MapView component", () => {
       loadCallbacks.forEach((cb) => cb({}));
     });
 
-    // Rerender with showHistoricSwipe = true
-    rerender(<MapView showHistoricSwipe={true} />);
-
     expect(mockMapInstance.setLayoutProperty).toHaveBeenCalledWith(
       "historic-raster-layer",
       "visibility",
-      "visible"
+      "none"
     );
 
     expect(mockMapInstance.setPaintProperty).toHaveBeenCalledWith(
       "historic-raster-layer",
       "raster-opacity",
-      expect.any(Number)
+      0
     );
 
-    // Rerender back to false
-    rerender(<MapView showHistoricSwipe={false} />);
+    // When showHistoricSwipe is enabled, primary map layer remains visibility: "none"
+    rerender(<MapView showHistoricSwipe={true} />);
 
     expect(mockMapInstance.setLayoutProperty).toHaveBeenCalledWith(
       "historic-raster-layer",
@@ -503,5 +524,151 @@ describe("MapView component", () => {
     expect(mockSetTiles).toHaveBeenCalledWith(
       expect.arrayContaining([expect.stringContaining("Houston_1924_Sanborn")])
     );
+  });
+
+  it("initializes secondary map, syncs camera, resizes, and cleans up when showHistoricSwipe toggles", () => {
+    let resizeCallback: any = null;
+    vi.spyOn(global, "ResizeObserver").mockImplementation(function (
+      this: any,
+      cb: any
+    ) {
+      resizeCallback = cb;
+      return {
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+      };
+    } as any);
+
+    const { rerender } = render(
+      <MapView showHistoricSwipe={true} swipePosition={50} />
+    );
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    expect(mockSecondaryMapInstance).not.toBeNull();
+    expect(mockSecondaryMapInstance.options.container).toBeDefined();
+
+    // Primary map camera move triggers jumpTo on secondary map
+    const moveCallbacks = eventListeners.get("move") || [];
+    expect(moveCallbacks.length).toBeGreaterThan(0);
+    act(() => {
+      moveCallbacks.forEach((cb) => cb({}));
+    });
+    expect(mockSecondaryMapInstance.jumpTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        zoom: 14.5,
+      })
+    );
+
+    // Container resize calls resize on both primary and secondary map
+    act(() => {
+      resizeCallback?.([]);
+    });
+    expect(mockMapInstance.resize).toHaveBeenCalled();
+    expect(mockSecondaryMapInstance.resize).toHaveBeenCalled();
+
+    // Toggling showHistoricSwipe to false removes secondary map
+    rerender(<MapView showHistoricSwipe={false} />);
+    expect(mockSecondaryMapInstance.remove).toHaveBeenCalled();
+  });
+
+  it("ignores clicks on parcels, landmarks, and districts on the historic side of the divider", () => {
+    const onSelectParcel = vi.fn();
+    const onSelectLandmark = vi.fn();
+    const onSelectDistrict = vi.fn();
+
+    render(
+      <MapView
+        showHistoricSwipe={true}
+        swipePosition={50}
+        onSelectParcel={onSelectParcel}
+        onSelectLandmark={onSelectLandmark}
+        onSelectDistrict={onSelectDistrict}
+      />
+    );
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    const container = screen.getByTestId("map-view-container");
+    vi.spyOn(container, "clientWidth", "get").mockReturnValue(1000);
+
+    const parcelCallbacks = eventListeners.get("click:parcels-fill") || [];
+    const landmarkCallbacks =
+      eventListeners.get("click:landmarks-outer") || [];
+    const districtCallbacks =
+      eventListeners.get("click:historic-districts-fill") || [];
+
+    // Click at x=700 (historic side, divider is at 500)
+    act(() => {
+      parcelCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 700, y: 300 },
+          features: [{ properties: { id: "001" } }],
+        })
+      );
+    });
+    expect(onSelectParcel).not.toHaveBeenCalled();
+
+    // Click at x=200 (modern side, divider is at 500)
+    act(() => {
+      parcelCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 200, y: 300 },
+          features: [{ properties: { id: "001" } }],
+        })
+      );
+    });
+    expect(onSelectParcel).toHaveBeenCalledWith({ id: "001" });
+
+    // Landmark click at x=800 (historic side)
+    act(() => {
+      landmarkCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 800, y: 300 },
+          features: [{ properties: { id: "lm-1" } }],
+        })
+      );
+    });
+    expect(onSelectLandmark).not.toHaveBeenCalled();
+
+    // Landmark click at x=100 (modern side)
+    act(() => {
+      landmarkCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 100, y: 300 },
+          features: [{ properties: { id: "lm-1" } }],
+        })
+      );
+    });
+    expect(onSelectLandmark).toHaveBeenCalledWith({ id: "lm-1" });
+
+    // District click at x=900 (historic side)
+    act(() => {
+      districtCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 900, y: 300 },
+          features: [{ properties: { id: "dist-1" } }],
+        })
+      );
+    });
+    expect(onSelectDistrict).not.toHaveBeenCalled();
+
+    // District click at x=150 (modern side)
+    act(() => {
+      districtCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 150, y: 300 },
+          features: [{ properties: { id: "dist-1" } }],
+        })
+      );
+    });
+    expect(onSelectDistrict).toHaveBeenCalledWith({ id: "dist-1" });
   });
 });

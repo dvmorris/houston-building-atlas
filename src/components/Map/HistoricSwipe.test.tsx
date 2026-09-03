@@ -277,4 +277,57 @@ describe("HistoricSwipe component", () => {
       "polygon(100% 0, 100% 0, 100% 100%, 100% 100%)"
     );
   });
+
+  it("closes layer selector dropdown when pressing Escape key", () => {
+    render(
+      <HistoricSwipe
+        position={50}
+        onPositionChange={vi.fn()}
+      />
+    );
+
+    const selectBtn = screen.getByTestId("historic-layer-select-btn");
+    fireEvent.click(selectBtn);
+    expect(screen.getByTestId("historic-layer-menu")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("historic-layer-menu")).not.toBeInTheDocument();
+  });
+
+  it("closes layer selector dropdown when clicking outside", () => {
+    render(
+      <div>
+        <div data-testid="outside-area">Outside</div>
+        <HistoricSwipe
+          position={50}
+          onPositionChange={vi.fn()}
+        />
+      </div>
+    );
+
+    const selectBtn = screen.getByTestId("historic-layer-select-btn");
+    fireEvent.click(selectBtn);
+    expect(screen.getByTestId("historic-layer-menu")).toBeInTheDocument();
+
+    const outsideArea = screen.getByTestId("outside-area");
+    fireEvent.mouseDown(outsideArea);
+    expect(screen.queryByTestId("historic-layer-menu")).not.toBeInTheDocument();
+  });
+
+  it("applies hidden sm:block to side badges to prevent mobile collisions", () => {
+    render(
+      <HistoricSwipe
+        position={50}
+        onPositionChange={vi.fn()}
+      />
+    );
+
+    const leftBadge = screen.getByTestId("historic-swipe-left-label");
+    const rightBadge = screen.getByTestId("historic-swipe-right-label");
+
+    expect(leftBadge.className).toContain("hidden");
+    expect(leftBadge.className).toContain("sm:block");
+    expect(rightBadge.className).toContain("hidden");
+    expect(rightBadge.className).toContain("sm:block");
+  });
 });

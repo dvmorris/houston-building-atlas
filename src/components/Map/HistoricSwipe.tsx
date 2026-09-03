@@ -74,6 +74,42 @@ export const HistoricSwipe: React.FC<HistoricSwipeProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
   const dividerRef = useRef<HTMLDivElement>(null);
+  const layerMenuRef = useRef<HTMLDivElement>(null);
+  const layerBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Close layer menu on click-outside or Escape key
+  useEffect(() => {
+    if (!isLayerMenuOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsLayerMenuOpen(false);
+        layerBtnRef.current?.focus();
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        layerMenuRef.current &&
+        !layerMenuRef.current.contains(target) &&
+        layerBtnRef.current &&
+        !layerBtnRef.current.contains(target)
+      ) {
+        setIsLayerMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isLayerMenuOpen]);
 
   // Clamp position between 0 and 100
   const clampedPosition = Math.max(0, Math.min(100, Number(position) || 0));
@@ -207,6 +243,7 @@ export const HistoricSwipe: React.FC<HistoricSwipeProps> = ({
         {/* Layer Selector Dropdown Toggle */}
         <div className="relative">
           <button
+            ref={layerBtnRef}
             type="button"
             onClick={() => setIsLayerMenuOpen(!isLayerMenuOpen)}
             className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 transition-colors"
@@ -220,6 +257,7 @@ export const HistoricSwipe: React.FC<HistoricSwipeProps> = ({
 
           {isLayerMenuOpen && (
             <div
+              ref={layerMenuRef}
               className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 bg-stone-900 border border-stone-700 rounded-lg shadow-2xl py-1 z-40"
               data-testid="historic-layer-menu"
             >
@@ -265,16 +303,16 @@ export const HistoricSwipe: React.FC<HistoricSwipeProps> = ({
         )}
       </div>
 
-      {/* Floating Side Badges */}
+      {/* Floating Side Badges (hidden on narrow mobile to avoid colliding with center toolbar) */}
       <div
-        className="absolute top-4 left-4 z-10 pointer-events-none bg-stone-900/90 border border-stone-700/80 rounded-md px-2.5 py-1 text-xs font-semibold text-stone-200 shadow-lg backdrop-blur-sm"
+        className="hidden sm:block absolute top-4 left-4 z-10 pointer-events-none bg-stone-900/90 border border-stone-700/80 rounded-md px-2.5 py-1 text-xs font-semibold text-stone-200 shadow-lg backdrop-blur-sm"
         data-testid="historic-swipe-left-label"
       >
         {leftLabel}
       </div>
 
       <div
-        className="absolute top-4 right-4 z-10 pointer-events-none bg-amber-950/90 border border-amber-600/70 rounded-md px-2.5 py-1 text-xs font-semibold text-amber-200 shadow-lg backdrop-blur-sm"
+        className="hidden sm:block absolute top-4 right-4 z-10 pointer-events-none bg-amber-950/90 border border-amber-600/70 rounded-md px-2.5 py-1 text-xs font-semibold text-amber-200 shadow-lg backdrop-blur-sm"
         data-testid="historic-swipe-right-label"
       >
         {displayRightLabel}
