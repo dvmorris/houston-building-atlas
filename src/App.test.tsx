@@ -36,4 +36,9 @@ describe("App", () => {
     expect(fromInput.value).toBe("1880");
     expect(toInput.value).toBe("1914");
   });
+
+  it("does not render PropertyDrawer initially when no parcel is selected", () => {
+    render(<App />);
+    expect(screen.queryByTestId("property-drawer")).not.toBeInTheDocument();
+  });
 });

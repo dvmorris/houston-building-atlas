@@ -5,6 +5,7 @@ import MapView, {
   DistrictProperties,
 } from "./components/Map/MapView";
 import { TimelineBar } from "./components/Timeline/TimelineBar";
+import { PropertyDrawer } from "./components/Drawer/PropertyDrawer";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 
 export default function App() {
@@ -21,6 +22,20 @@ export default function App() {
     useState<LandmarkProperties | null>(null);
   const [selectedDistrict, setSelectedDistrict] =
     useState<DistrictProperties | null>(null);
+
+  const handleSelectParcel = (parcel: ParcelProperties | null) => {
+    setSelectedParcel(parcel);
+    if (parcel) {
+      setSelectedLandmark(null);
+    }
+  };
+
+  const handleSelectLandmark = (landmark: LandmarkProperties | null) => {
+    setSelectedLandmark(landmark);
+    if (landmark) {
+      setSelectedParcel(null);
+    }
+  };
 
   const [sampleParcels, setSampleParcels] = useState<Array<{ yr: number }>>([]);
 
@@ -98,48 +113,25 @@ export default function App() {
           yearMax={timeline.yearMax}
           selectedParcelId={selectedParcel?.id}
           selectedLandmarkId={selectedLandmark?.id}
-          onSelectParcel={setSelectedParcel}
-          onSelectLandmark={setSelectedLandmark}
+          onSelectParcel={handleSelectParcel}
+          onSelectLandmark={handleSelectLandmark}
           onSelectDistrict={setSelectedDistrict}
         />
 
-        {/* Selected Parcel or Landmark Overlay Card */}
-        {(selectedParcel || selectedLandmark) && (
-          <div className="absolute bottom-6 left-6 z-10 max-w-sm rounded-lg border border-stone-700 bg-stone-900/90 p-3 shadow-xl backdrop-blur">
-            {selectedParcel && (
-              <div>
-                <div className="text-xs font-semibold text-stone-400">
-                  Selected Parcel
-                </div>
-                <div className="text-sm font-bold text-stone-100">
-                  {selectedParcel.addr}
-                </div>
-                <div className="text-xs text-stone-300">
-                  Built: {selectedParcel.yr || "Unknown"}
-                </div>
-              </div>
-            )}
-            {selectedLandmark && (
-              <div
-                className={
-                  selectedParcel ? "mt-2 border-t border-stone-800 pt-2" : ""
-                }
-              >
-                <div className="text-xs font-semibold text-amber-400">
-                  {selectedLandmark.designation === "PLM"
-                    ? "Protected Landmark"
-                    : "Landmark"}
-                </div>
-                <div className="text-sm font-bold text-stone-100">
-                  {selectedLandmark.name}
-                </div>
-                <div className="text-xs text-stone-300">
-                  {selectedLandmark.addr} ({selectedLandmark.yr})
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Responsive Property Inspection Drawer & Historic Badges */}
+        <PropertyDrawer
+          parcel={selectedParcel}
+          landmark={selectedLandmark}
+          district={selectedDistrict}
+          isOpen={Boolean(selectedParcel || selectedLandmark)}
+          onClose={() => {
+            setSelectedParcel(null);
+            setSelectedLandmark(null);
+          }}
+          onExportDossier={(property) => {
+            console.info("Export Building Dossier requested for:", property);
+          }}
+        />
       </main>
 
       {/* Bottom Timeline Scrubber & Timelapse Player */}
