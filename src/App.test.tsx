@@ -1,8 +1,12 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import App from "./App";
 
 describe("App", () => {
+  beforeEach(() => {
+    window.location.hash = "";
+  });
+
   it("renders Preservation Houston Atlas title", () => {
     render(<App />);
     expect(screen.getByText(/Preservation Houston/i)).toBeInTheDocument();
@@ -206,4 +210,76 @@ describe("App", () => {
       screen.queryByTestId("geolocation-error-toast")
     ).not.toBeInTheDocument();
   });
+
+  it("initializes timeline, parcel drawer, and historic swipe from deep-linked URL hash", () => {
+    const testHash =
+      "#16/29.7521/-95.3621?yr_min=1900&yr_max=1930&parcel=0010020000001&swipe=1";
+    window.location.hash = testHash;
+
+    render(<App />);
+
+    // Verify timeline initialized to deep-linked years
+    const fromInput = screen.getByLabelText("Filter from year") as HTMLInputElement;
+    const toInput = screen.getByLabelText("Filter to year") as HTMLInputElement;
+    expect(fromInput.value).toBe("1900");
+    expect(toInput.value).toBe("1930");
+
+    // Verify historic swipe is initialized to open (swipe=1)
+    expect(screen.getByTestId("historic-swipe-wrapper")).toBeInTheDocument();
+
+    // Verify property drawer is opened for deep-linked parcel
+    expect(screen.getByTestId("property-drawer")).toBeInTheDocument();
+    expect(screen.getByText(/001-002-000-0001/i)).toBeInTheDocument();
+
+    // Reset location
+    window.location.hash = "";
+  });
+
+  it("updates URL hash when user clicks an era shortcut in App", async () => {
+    vi.useFakeTimers();
+    const replaceStateSpy = vi.spyOn(window.history, "replaceState");
+
+    render(<App />);
+
+    const victorianBtn = screen.getByRole("button", {
+      name: /Victorian & Railroad Boom/i,
+    });
+    fireEvent.click(victorianBtn);
+
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      "",
+      expect.stringContaining("yr_min=1880&yr_max=1914")
+    );
+
+    vi.useRealTimers();
+  });
+
+  it("handles browser popstate navigation by updating timeline and swipe mode", () => {
+    render(<App />);
+
+    // Initially standard bounds
+    const fromInput = screen.getByLabelText("Filter from year") as HTMLInputElement;
+    const toInput = screen.getByLabelText("Filter to year") as HTMLInputElement;
+    expect(fromInput.value).toBe("1836");
+    expect(toInput.value).toBe("2026");
+
+    // Dispatch popstate event with new URL
+    const newHash =
+      "#16/29.7521/-95.3621?yr_min=1920&yr_max=1945&swipe=1";
+    window.location.hash = newHash;
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(fromInput.value).toBe("1920");
+    expect(toInput.value).toBe("1945");
+    expect(screen.getByTestId("historic-swipe-wrapper")).toBeInTheDocument();
+  });
 });
+

@@ -14,19 +14,38 @@ import { DossierModal } from "./components/Drawer/DossierModal";
 import { HistoricSwipe } from "./components/Map/HistoricSwipe";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 import { useGeolocator } from "./hooks/useGeolocator";
+import { useMapState, parseMapState } from "./hooks/useMapState";
 
 export default function App() {
   const mapRef = useRef<maplibregl.Map | null>(null);
 
+  // Parse initial deep-linked URL parameters (coordinates, years, parcel, swipe)
+  const [initialMapState] = useState(() =>
+    parseMapState(typeof window !== "undefined" ? window.location.href : "")
+  );
+
   const timeline = useTimelinePlayer({
     minBound: 1836,
     maxBound: 2026,
-    initialYearMin: 1836,
-    initialYearMax: 2026,
+    initialYearMin: initialMapState.yearMin,
+    initialYearMax: initialMapState.yearMax,
   });
 
   const [selectedParcel, setSelectedParcel] =
-    useState<ParcelProperties | null>(null);
+    useState<ParcelProperties | null>(() => {
+      if (initialMapState.parcelId) {
+        return {
+          id: initialMapState.parcelId,
+          addr: `HCAD #${initialMapState.parcelId}`,
+          yr: 1920,
+          owner: "Harris County Property Owner",
+          use: "RES",
+          dist: null,
+          contrib: 1,
+        };
+      }
+      return null;
+    });
   const [selectedLandmark, setSelectedLandmark] =
     useState<LandmarkProperties | null>(null);
   const [selectedDistrict, setSelectedDistrict] =
@@ -35,7 +54,9 @@ export default function App() {
     ParcelProperties | LandmarkProperties | null
   >(null);
 
-  const [showHistoricSwipe, setShowHistoricSwipe] = useState(false);
+  const [showHistoricSwipe, setShowHistoricSwipe] = useState(
+    initialMapState.swipe
+  );
   const [swipePosition, setSwipePosition] = useState(50);
   const [historicLayerId, setHistoricLayerId] = useState("usgs-1915");
 
@@ -43,6 +64,49 @@ export default function App() {
   const [fullSampleParcels, setFullSampleParcels] = useState<ParcelProperties[]>(
     []
   );
+
+  // Synchronize map state with URL hash and handle browser forward/back navigation
+  const mapStateHook = useMapState({
+    initialState: initialMapState,
+    yearMin: timeline.yearMin,
+    yearMax: timeline.yearMax,
+    selectedParcelId: selectedParcel?.id ?? null,
+    showHistoricSwipe: showHistoricSwipe,
+    onPopState: (poppedState) => {
+      timeline.setYearRange(poppedState.yearMin, poppedState.yearMax);
+      setShowHistoricSwipe(poppedState.swipe);
+
+      if (poppedState.parcelId) {
+        const found = fullSampleParcels.find(
+          (p) => p.id === poppedState.parcelId
+        );
+        if (found) {
+          setSelectedParcel(found);
+        } else {
+          setSelectedParcel({
+            id: poppedState.parcelId,
+            addr: `HCAD #${poppedState.parcelId}`,
+            yr: 1920,
+            owner: "Harris County Property Owner",
+            use: "RES",
+            dist: null,
+            contrib: 1,
+          });
+        }
+        setSelectedLandmark(null);
+      } else {
+        setSelectedParcel(null);
+      }
+
+      if (mapRef.current && typeof mapRef.current.flyTo === "function") {
+        mapRef.current.flyTo({
+          center: [poppedState.lng, poppedState.lat],
+          zoom: poppedState.zoom,
+          essential: true,
+        });
+      }
+    },
+  });
 
   const [geoErrorMessage, setGeoErrorMessage] = useState<string | null>(null);
 
@@ -130,24 +194,33 @@ export default function App() {
               yr: Number(f.properties?.yr) || 0,
             }))
           );
-          setFullSampleParcels(
-            data.features.map((f: any) => ({
-              id: String(f.properties?.id || f.id || ""),
-              yr: Number(f.properties?.yr) || 0,
-              addr: String(f.properties?.addr || ""),
-              owner: String(f.properties?.owner || "Unknown Owner"),
-              use: String(f.properties?.use || "RES"),
-              dist: f.properties?.dist || null,
-              contrib: f.properties?.contrib ?? 1,
-              st: f.properties?.st,
-            }))
-          );
+          const parcels = data.features.map((f: any) => ({
+            id: String(f.properties?.id || f.id || ""),
+            yr: Number(f.properties?.yr) || 0,
+            addr: String(f.properties?.addr || ""),
+            owner: String(f.properties?.owner || "Unknown Owner"),
+            use: String(f.properties?.use || "RES"),
+            dist: f.properties?.dist || null,
+            contrib: f.properties?.contrib ?? 1,
+            st: f.properties?.st,
+          }));
+          setFullSampleParcels(parcels);
+
+          // If initial URL deep-linked a parcel, upgrade to full metadata
+          if (initialMapState.parcelId) {
+            const matched = parcels.find(
+              (p: ParcelProperties) => p.id === initialMapState.parcelId
+            );
+            if (matched) {
+              setSelectedParcel(matched);
+            }
+          }
         }
       })
       .catch(() => {
         // Fallback gracefully in environments without fetch
       });
-  }, []);
+  }, [initialMapState.parcelId]);
 
   const visibleStructureCount =
     sampleParcels.length > 0
@@ -201,6 +274,8 @@ export default function App() {
       {/* Main Map View Area */}
       <main className="relative flex-1 min-h-0">
         <MapView
+          initialCenter={[initialMapState.lng, initialMapState.lat]}
+          initialZoom={initialMapState.zoom}
           yearMin={timeline.yearMin}
           yearMax={timeline.yearMax}
           selectedParcelId={selectedParcel?.id}
@@ -210,6 +285,16 @@ export default function App() {
           onSelectDistrict={setSelectedDistrict}
           onMapLoaded={(map) => {
             mapRef.current = map;
+            map.on("moveend", () => {
+              if (
+                typeof map.getCenter === "function" &&
+                typeof map.getZoom === "function"
+              ) {
+                const center = map.getCenter();
+                const zoom = map.getZoom();
+                mapStateHook.updateCamera(zoom, center.lat, center.lng);
+              }
+            });
           }}
           showHistoricSwipe={showHistoricSwipe}
           swipePosition={swipePosition}
