@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import App from "./App";
 
 describe("App", () => {
@@ -86,5 +86,47 @@ describe("App", () => {
     expect(
       screen.queryByTestId("historic-swipe-wrapper")
     ).not.toBeInTheDocument();
+  });
+
+  it("mounts Header with SearchBar and GPS walking tour locator", () => {
+    render(<App />);
+
+    expect(screen.getByTestId("search-bar-input")).toBeInTheDocument();
+    expect(screen.getByTestId("locate-me-btn")).toBeInTheDocument();
+  });
+
+  it("selects landmark from search omnibox and opens PropertyDrawer", async () => {
+    render(<App />);
+
+    const searchInput = screen.getByTestId("search-bar-input");
+    fireEvent.change(searchInput, { target: { value: "Julia Ideson" } });
+
+    const result = await screen.findByTestId("search-result-lm-julia-ideson");
+    fireEvent.click(result);
+
+    // PropertyDrawer should now be open displaying Julia Ideson Building
+    const drawer = await screen.findByTestId("property-drawer");
+    expect(drawer).toBeInTheDocument();
+    expect(screen.getByText("Julia Ideson Building")).toBeInTheDocument();
+  });
+
+  it("triggers GPS walking tour locateUser when Locate Me button is clicked", () => {
+    const mockGetCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      value: {
+        getCurrentPosition: mockGetCurrentPosition,
+        watchPosition: vi.fn(),
+        clearWatch: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    render(<App />);
+
+    const locateBtn = screen.getByTestId("locate-me-btn");
+    fireEvent.click(locateBtn);
+
+    expect(mockGetCurrentPosition).toHaveBeenCalled();
   });
 });

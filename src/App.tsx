@@ -1,16 +1,21 @@
-import { useState, useEffect } from "react";
-import { Layers } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import maplibregl from "maplibre-gl";
 import MapView, {
   ParcelProperties,
   LandmarkProperties,
   DistrictProperties,
 } from "./components/Map/MapView";
+import { Header } from "./components/Header/Header";
+import { SearchSelectLocation } from "./components/Header/SearchBar";
 import { TimelineBar } from "./components/Timeline/TimelineBar";
 import { PropertyDrawer } from "./components/Drawer/PropertyDrawer";
 import { HistoricSwipe } from "./components/Map/HistoricSwipe";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
+import { useGeolocator } from "./hooks/useGeolocator";
 
 export default function App() {
+  const mapRef = useRef<maplibregl.Map | null>(null);
+
   const timeline = useTimelinePlayer({
     minBound: 1836,
     maxBound: 2026,
@@ -29,6 +34,24 @@ export default function App() {
   const [swipePosition, setSwipePosition] = useState(50);
   const [historicLayerId, setHistoricLayerId] = useState("usgs-1915");
 
+  const [sampleParcels, setSampleParcels] = useState<Array<{ yr: number }>>([]);
+  const [fullSampleParcels, setFullSampleParcels] = useState<ParcelProperties[]>(
+    []
+  );
+
+  // Initialize GPS locator hook
+  const geolocator = useGeolocator({
+    onLocationFound: (coords) => {
+      if (mapRef.current && typeof mapRef.current.flyTo === "function") {
+        mapRef.current.flyTo({
+          center: [coords.longitude, coords.latitude],
+          zoom: 17,
+          essential: true,
+        });
+      }
+    },
+  });
+
   const handleSelectParcel = (parcel: ParcelProperties | null) => {
     setSelectedParcel(parcel);
     if (parcel) {
@@ -43,9 +66,39 @@ export default function App() {
     }
   };
 
-  const [sampleParcels, setSampleParcels] = useState<Array<{ yr: number }>>([]);
+  // Handle location selection from SearchBar or GPS walking tour
+  const handleSelectLocation = (location: SearchSelectLocation) => {
+    if (mapRef.current && typeof mapRef.current.flyTo === "function") {
+      mapRef.current.flyTo({
+        center: [location.lng, location.lat],
+        zoom: location.zoom ?? 17,
+        essential: true,
+      });
+    }
 
-  // Load sample parcels to calculate live visible structure count
+    if (location.parcelId) {
+      const found = fullSampleParcels.find((p) => p.id === location.parcelId);
+      if (found) {
+        setSelectedParcel(found);
+      } else {
+        setSelectedParcel({
+          id: location.parcelId,
+          addr: location.address || `HCAD #${location.parcelId}`,
+          yr: 1920,
+          owner: "Harris County Property Owner",
+          use: "RES",
+          dist: null,
+          contrib: 1,
+        });
+      }
+      setSelectedLandmark(null);
+    } else if (location.landmark) {
+      setSelectedLandmark(location.landmark);
+      setSelectedParcel(null);
+    }
+  };
+
+  // Load sample parcels to calculate live visible structure count and property lookup
   useEffect(() => {
     fetch("/data/parcels_sample.geojson")
       .then((res) => (res.ok ? res.json() : null))
@@ -54,6 +107,18 @@ export default function App() {
           setSampleParcels(
             data.features.map((f: any) => ({
               yr: Number(f.properties?.yr) || 0,
+            }))
+          );
+          setFullSampleParcels(
+            data.features.map((f: any) => ({
+              id: String(f.properties?.id || f.id || ""),
+              yr: Number(f.properties?.yr) || 0,
+              addr: String(f.properties?.addr || ""),
+              owner: String(f.properties?.owner || "Unknown Owner"),
+              use: String(f.properties?.use || "RES"),
+              dist: f.properties?.dist || null,
+              contrib: f.properties?.contrib ?? 1,
+              st: f.properties?.st,
             }))
           );
         }
@@ -72,64 +137,19 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-stone-900 text-stone-100 overflow-hidden">
-      {/* Top Application Header */}
-      <header className="flex h-14 items-center justify-between border-b border-stone-800 px-4 bg-stone-900/90 z-10 flex-shrink-0">
-        <div>
-          <h1 className="text-lg font-bold tracking-wide">
-            Preservation Houston Building Atlas
-          </h1>
-          {selectedDistrict && (
-            <p className="text-xs text-amber-500">
-              District: {selectedDistrict.name}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3 text-xs text-stone-300">
-          <button
-            type="button"
-            onClick={() => setShowHistoricSwipe((prev) => !prev)}
-            aria-label={
-              showHistoricSwipe
-                ? "Exit historic map swipe"
-                : "Compare historic map"
-            }
-            aria-pressed={showHistoricSwipe}
-            data-testid="historic-swipe-toggle-btn"
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-              showHistoricSwipe
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.25)]"
-                : "bg-stone-800 hover:bg-stone-700 text-stone-200 border-stone-700"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
-            <span>{showHistoricSwipe ? "Exit Swipe" : "Compare 1915 Map"}</span>
-          </button>
-          <label className="flex items-center gap-1 font-mono">
-            <span>From:</span>
-            <input
-              type="number"
-              min={1836}
-              max={timeline.yearMax}
-              value={timeline.yearMin}
-              onChange={(e) => timeline.setYearMin(Number(e.target.value))}
-              aria-label="Filter from year"
-              className="w-16 rounded border border-stone-700 bg-stone-800 px-1.5 py-0.5 text-stone-100"
-            />
-          </label>
-          <label className="flex items-center gap-1 font-mono">
-            <span>To:</span>
-            <input
-              type="number"
-              min={timeline.yearMin}
-              max={2026}
-              value={timeline.yearMax}
-              onChange={(e) => timeline.setYearMax(Number(e.target.value))}
-              aria-label="Filter to year"
-              className="w-16 rounded border border-stone-700 bg-stone-800 px-1.5 py-0.5 text-stone-100"
-            />
-          </label>
-        </div>
-      </header>
+      {/* Top Application Header with Omnibox Search and GPS Locator */}
+      <Header
+        onSelectLocation={handleSelectLocation}
+        showHistoricSwipe={showHistoricSwipe}
+        onToggleHistoricSwipe={() => setShowHistoricSwipe((prev) => !prev)}
+        isLocating={geolocator.isLocating}
+        onLocateMe={() => geolocator.locateUser()}
+        selectedDistrict={selectedDistrict}
+        yearMin={timeline.yearMin}
+        yearMax={timeline.yearMax}
+        onYearMinChange={timeline.setYearMin}
+        onYearMaxChange={timeline.setYearMax}
+      />
 
       {/* Main Map View Area */}
       <main className="relative flex-1 min-h-0">
@@ -141,6 +161,9 @@ export default function App() {
           onSelectParcel={handleSelectParcel}
           onSelectLandmark={handleSelectLandmark}
           onSelectDistrict={setSelectedDistrict}
+          onMapLoaded={(map) => {
+            mapRef.current = map;
+          }}
           showHistoricSwipe={showHistoricSwipe}
           swipePosition={swipePosition}
           historicLayerId={historicLayerId}

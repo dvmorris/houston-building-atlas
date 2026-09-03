@@ -45,6 +45,7 @@ vi.mock("maplibre-gl", () => {
     getBearing = vi.fn(() => 0);
     getPitch = vi.fn(() => 0);
     jumpTo = vi.fn();
+    flyTo = vi.fn();
     queryRenderedFeatures = vi.fn(() => []);
     resize = vi.fn();
     remove = vi.fn();
