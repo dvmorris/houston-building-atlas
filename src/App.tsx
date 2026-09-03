@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MapView, {
   ParcelProperties,
   LandmarkProperties,
   DistrictProperties,
 } from "./components/Map/MapView";
+import { TimelineBar } from "./components/Timeline/TimelineBar";
+import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 
 export default function App() {
-  const [yearMin, setYearMin] = useState(1836);
-  const [yearMax, setYearMax] = useState(2026);
+  const timeline = useTimelinePlayer({
+    minBound: 1836,
+    maxBound: 2026,
+    initialYearMin: 1836,
+    initialYearMax: 2026,
+  });
+
   const [selectedParcel, setSelectedParcel] =
     useState<ParcelProperties | null>(null);
   const [selectedLandmark, setSelectedLandmark] =
@@ -15,9 +22,37 @@ export default function App() {
   const [selectedDistrict, setSelectedDistrict] =
     useState<DistrictProperties | null>(null);
 
+  const [sampleParcels, setSampleParcels] = useState<Array<{ yr: number }>>([]);
+
+  // Load sample parcels to calculate live visible structure count
+  useEffect(() => {
+    fetch("/data/parcels_sample.geojson")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.features) {
+          setSampleParcels(
+            data.features.map((f: any) => ({
+              yr: Number(f.properties?.yr) || 0,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully in environments without fetch
+      });
+  }, []);
+
+  const visibleStructureCount =
+    sampleParcels.length > 0
+      ? sampleParcels.filter(
+          (p) => p.yr >= timeline.yearMin && p.yr <= timeline.yearMax
+        ).length
+      : undefined;
+
   return (
-    <div className="flex h-screen w-screen flex-col bg-stone-900 text-stone-100">
-      <header className="flex h-14 items-center justify-between border-b border-stone-800 px-4">
+    <div className="flex h-screen w-screen flex-col bg-stone-900 text-stone-100 overflow-hidden">
+      {/* Top Application Header */}
+      <header className="flex h-14 items-center justify-between border-b border-stone-800 px-4 bg-stone-900/90 z-10 flex-shrink-0">
         <div>
           <h1 className="text-lg font-bold tracking-wide">
             Preservation Houston Building Atlas
@@ -34,9 +69,10 @@ export default function App() {
             <input
               type="number"
               min={1836}
-              max={yearMax}
-              value={yearMin}
-              onChange={(e) => setYearMin(Number(e.target.value))}
+              max={timeline.yearMax}
+              value={timeline.yearMin}
+              onChange={(e) => timeline.setYearMin(Number(e.target.value))}
+              aria-label="Filter from year"
               className="w-16 rounded border border-stone-700 bg-stone-800 px-1.5 py-0.5 text-stone-100"
             />
           </label>
@@ -44,25 +80,30 @@ export default function App() {
             <span>To:</span>
             <input
               type="number"
-              min={yearMin}
+              min={timeline.yearMin}
               max={2026}
-              value={yearMax}
-              onChange={(e) => setYearMax(Number(e.target.value))}
+              value={timeline.yearMax}
+              onChange={(e) => timeline.setYearMax(Number(e.target.value))}
+              aria-label="Filter to year"
               className="w-16 rounded border border-stone-700 bg-stone-800 px-1.5 py-0.5 text-stone-100"
             />
           </label>
         </div>
       </header>
-      <main className="relative flex-1">
+
+      {/* Main Map View Area */}
+      <main className="relative flex-1 min-h-0">
         <MapView
-          yearMin={yearMin}
-          yearMax={yearMax}
+          yearMin={timeline.yearMin}
+          yearMax={timeline.yearMax}
           selectedParcelId={selectedParcel?.id}
           selectedLandmarkId={selectedLandmark?.id}
           onSelectParcel={setSelectedParcel}
           onSelectLandmark={setSelectedLandmark}
           onSelectDistrict={setSelectedDistrict}
         />
+
+        {/* Selected Parcel or Landmark Overlay Card */}
         {(selectedParcel || selectedLandmark) && (
           <div className="absolute bottom-6 left-6 z-10 max-w-sm rounded-lg border border-stone-700 bg-stone-900/90 p-3 shadow-xl backdrop-blur">
             {selectedParcel && (
@@ -100,6 +141,21 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Bottom Timeline Scrubber & Timelapse Player */}
+      <TimelineBar
+        yearMin={timeline.yearMin}
+        yearMax={timeline.yearMax}
+        onYearChange={timeline.setYearRange}
+        isPlaying={timeline.isPlaying}
+        onTogglePlay={timeline.togglePlay}
+        speed={timeline.speed}
+        onSpeedChange={timeline.setSpeed}
+        loop={timeline.loop}
+        onToggleLoop={timeline.toggleLoop}
+        totalVisibleCount={visibleStructureCount}
+        className="flex-shrink-0"
+      />
     </div>
   );
 }
