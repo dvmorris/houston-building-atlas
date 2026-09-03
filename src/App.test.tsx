@@ -110,6 +110,36 @@ describe("App", () => {
     expect(screen.getByText("Julia Ideson Building")).toBeInTheDocument();
   });
 
+  it("opens DossierModal when clicking Export Building Dossier in PropertyDrawer", async () => {
+    render(<App />);
+
+    const searchInput = screen.getByTestId("search-bar-input");
+    fireEvent.change(searchInput, { target: { value: "Julia Ideson" } });
+
+    const result = await screen.findByTestId("search-result-lm-julia-ideson");
+    fireEvent.click(result);
+
+    const drawer = await screen.findByTestId("property-drawer");
+    expect(drawer).toBeInTheDocument();
+
+    const exportBtn = screen.getByTestId("export-dossier-btn");
+    expect(exportBtn).toBeInTheDocument();
+    fireEvent.click(exportBtn);
+
+    // Verify DossierModal opens
+    const dossierModal = await screen.findByTestId("dossier-modal");
+    expect(dossierModal).toBeInTheDocument();
+    expect(screen.getByTestId("printable-dossier")).toBeInTheDocument();
+    expect(screen.getByTestId("dossier-landmark-name")).toHaveTextContent(
+      "Julia Ideson Building"
+    );
+
+    // Verify closing DossierModal
+    const closeBtn = screen.getByTestId("close-dossier-btn");
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId("dossier-modal")).not.toBeInTheDocument();
+  });
+
   it("triggers GPS walking tour locateUser when Locate Me button is clicked", () => {
     const mockGetCurrentPosition = vi.fn();
     Object.defineProperty(navigator, "geolocation", {

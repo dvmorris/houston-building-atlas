@@ -10,6 +10,7 @@ import { Header } from "./components/Header/Header";
 import { SearchSelectLocation } from "./components/Header/SearchBar";
 import { TimelineBar } from "./components/Timeline/TimelineBar";
 import { PropertyDrawer } from "./components/Drawer/PropertyDrawer";
+import { DossierModal } from "./components/Drawer/DossierModal";
 import { HistoricSwipe } from "./components/Map/HistoricSwipe";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 import { useGeolocator } from "./hooks/useGeolocator";
@@ -30,6 +31,9 @@ export default function App() {
     useState<LandmarkProperties | null>(null);
   const [selectedDistrict, setSelectedDistrict] =
     useState<DistrictProperties | null>(null);
+  const [dossierProperty, setDossierProperty] = useState<
+    ParcelProperties | LandmarkProperties | null
+  >(null);
 
   const [showHistoricSwipe, setShowHistoricSwipe] = useState(false);
   const [swipePosition, setSwipePosition] = useState(50);
@@ -234,8 +238,16 @@ export default function App() {
             setSelectedLandmark(null);
           }}
           onExportDossier={(property) => {
-            console.info("Export Building Dossier requested for:", property);
+            setDossierProperty(property);
           }}
+        />
+
+        {/* Printable Single-Page Historic Building Dossier Modal Export */}
+        <DossierModal
+          property={dossierProperty}
+          district={selectedDistrict}
+          isOpen={Boolean(dossierProperty)}
+          onClose={() => setDossierProperty(null)}
         />
       </main>
 
