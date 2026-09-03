@@ -2,9 +2,11 @@
  * Preservation Houston Building Atlas - Historic Building Dossier Print Utility
  *
  * Prepares normalized property metadata and generates print-ready single-page
- * (8.5" x 11" Letter) dossier data structures, QR code matrices, and print trigger.
+ * (8.5" x 11" Letter) dossier data structures, camera-scannable QR code matrices,
+ * and print trigger.
  */
 
+import QRCode from "qrcode";
 import {
   ParcelProperties,
   LandmarkProperties,
@@ -39,6 +41,8 @@ export interface DossierData {
   eraColor: string;
   /** Historic district name, if located within one */
   districtName: string | null;
+  /** Properly formatted district display name with single 'Historic District' suffix */
+  districtDisplayName: string | null;
   /** Resolved contributing status */
   contributingStatus: ContributingStatus;
   /** Status display label */
@@ -91,6 +95,20 @@ export interface DossierData {
   documentRefId: string;
   /** Custom research notes entered by the user */
   customNotes?: string;
+}
+
+/**
+ * Formats a historic district name with "Historic District" suffix,
+ * preventing duplicate suffixes like "Downtown Historic District Historic District".
+ */
+export function formatDistrictDisplayName(
+  name: string | null | undefined
+): string | null {
+  if (!name) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const base = trimmed.replace(/\s+historic\s+district$/i, "").trim();
+  return `${base} Historic District`;
 }
 
 /**
@@ -178,6 +196,7 @@ export function prepareDossierData(
     district?.name ||
     (isLandmark && (safeProp as any).dist) ||
     null;
+  const districtDisplayName = formatDistrictDisplayName(districtName);
 
   // Resolve contributing status
   const contributingStatus = resolveContributingStatus({
@@ -262,6 +281,7 @@ export function prepareDossierData(
     eraName,
     eraColor,
     districtName,
+    districtDisplayName,
     contributingStatus,
     contributingLabel: statusInfo.label,
     contributingDescription: statusInfo.description,
@@ -307,84 +327,29 @@ export function triggerPrint(): boolean {
 }
 
 /**
- * Generates a deterministic 21x21 QR code module matrix for an input string.
- * Renders standard finder patterns (top-left, top-right, bottom-left), timing patterns,
- * format areas, and deterministic data modules without any external libraries.
+ * Generates an authentic ISO/IEC 18004 byte mode QR code module matrix for an input URL string.
+ * This guarantees optical scannability with physical smartphone cameras (iOS Camera, Android Google Lens).
  */
 export function generateQrMatrix(text: string): boolean[][] {
-  const size = 21;
-  const matrix: boolean[][] = Array.from({ length: size }, () =>
-    Array(size).fill(false)
-  );
-  const reserved: boolean[][] = Array.from({ length: size }, () =>
-    Array(size).fill(false)
-  );
-
-  // Helper to mark a 7x7 Finder Pattern at (rowOffset, colOffset)
-  const drawFinder = (rO: number, cO: number) => {
-    for (let r = 0; r < 7; r++) {
-      for (let c = 0; c < 7; c++) {
-        const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
-        const isCenter = r >= 2 && r <= 4 && c >= 2 && c <= 4;
-        matrix[rO + r][cO + c] = isBorder || isCenter;
-        reserved[rO + r][cO + c] = true;
+  if (!text) return [];
+  try {
+    const qr = QRCode.create(text, {
+      errorCorrectionLevel: "M",
+    });
+    const size = qr.modules.size;
+    const matrix: boolean[][] = [];
+    for (let r = 0; r < size; r++) {
+      const row: boolean[] = [];
+      for (let c = 0; c < size; c++) {
+        row.push(Boolean(qr.modules.get(r, c)));
       }
+      matrix.push(row);
     }
-    // White separator border
-    for (let r = -1; r <= 7; r++) {
-      for (let c = -1; c <= 7; c++) {
-        const rPos = rO + r;
-        const cPos = cO + c;
-        if (rPos >= 0 && rPos < size && cPos >= 0 && cPos < size) {
-          reserved[rPos][cPos] = true;
-        }
-      }
-    }
-  };
-
-  // 1. Top-Left Finder
-  drawFinder(0, 0);
-  // 2. Top-Right Finder
-  drawFinder(0, size - 7);
-  // 3. Bottom-Left Finder
-  drawFinder(size - 7, 0);
-
-  // 4. Timing patterns on row 6 and col 6
-  for (let i = 8; i < size - 8; i++) {
-    matrix[6][i] = i % 2 === 0;
-    matrix[i][6] = i % 2 === 0;
-    reserved[6][i] = true;
-    reserved[i][6] = true;
+    return matrix;
+  } catch (err) {
+    console.warn("Failed to generate QR code matrix:", err);
+    return [];
   }
-
-  // 5. Dark module at (13, 8)
-  matrix[size - 8][8] = true;
-  reserved[size - 8][8] = true;
-
-  // 6. Deterministic data hashing from input string
-  let hash = 2166136261;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  // Linear Congruential Generator for reproducible fill
-  let seed = Math.abs(hash);
-  const nextBit = () => {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return (seed >> 16) % 2 === 1;
-  };
-
-  // Fill remaining unreserved modules
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (!reserved[r][c]) {
-        matrix[r][c] = nextBit();
-      }
-    }
-  }
-
-  return matrix;
 }
 
 /**

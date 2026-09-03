@@ -9,6 +9,7 @@ import {
   prepareDossierData,
   generateQrMatrix,
   triggerPrint,
+  formatDistrictDisplayName,
 } from "../../utils/printDossier";
 import { ParcelProperties, LandmarkProperties } from "../Map/MapView";
 
@@ -65,17 +66,32 @@ describe("printDossier utilities", () => {
     expect(data.contributingStatus).toBe("outside");
   });
 
-  it("generates 21x21 QR code matrix with finder patterns", () => {
-    const matrix = generateQrMatrix("https://atlas.preservationhouston.org");
-    expect(matrix.length).toBe(21);
-    expect(matrix[0].length).toBe(21);
+  it("generates camera-scannable QR code matrix with ISO/IEC 18004 standards", () => {
+    const url = "https://atlas.preservationhouston.org";
+    const matrix = generateQrMatrix(url);
+    expect(matrix.length).toBeGreaterThanOrEqual(21);
+    const size = matrix.length;
+    expect(matrix[0].length).toBe(size);
 
-    // Top-left finder center (row 3, col 3) should be filled
+    // Finder patterns: top-left (3,3), top-right (3, size-4), bottom-left (size-4, 3)
     expect(matrix[3][3]).toBe(true);
-    // Top-right finder center (row 3, col 17) should be filled
-    expect(matrix[3][17]).toBe(true);
-    // Bottom-left finder center (row 17, col 3) should be filled
-    expect(matrix[17][3]).toBe(true);
+    expect(matrix[3][size - 4]).toBe(true);
+    expect(matrix[size - 4][3]).toBe(true);
+  });
+
+  it("normalizes district display names without duplicating suffix", () => {
+    expect(formatDistrictDisplayName("Downtown")).toBe("Downtown Historic District");
+    expect(formatDistrictDisplayName("Downtown Historic District")).toBe(
+      "Downtown Historic District"
+    );
+    expect(formatDistrictDisplayName("Main Street Market Square")).toBe(
+      "Main Street Market Square Historic District"
+    );
+    expect(
+      formatDistrictDisplayName("Main Street Market Square Historic District")
+    ).toBe("Main Street Market Square Historic District");
+    expect(formatDistrictDisplayName("")).toBeNull();
+    expect(formatDistrictDisplayName(null)).toBeNull();
   });
 
   it("triggers window.print when called", () => {
@@ -194,6 +210,33 @@ describe("DossierModal Component", () => {
     );
     expect(screen.getByTestId("dossier-district")).toHaveTextContent(
       "Main Street Market Square Historic District"
+    );
+  });
+
+  it("does not duplicate 'Historic District' suffix when district name already includes it", () => {
+    const parcelWithSuffix: ParcelProperties = {
+      id: "0010020000003",
+      yr: 1920,
+      addr: "400 HEIGHTS BLVD",
+      owner: "HEIGHTS RESIDENT",
+      use: "RES",
+      dist: "Houston Heights Historic District",
+      contrib: 1,
+      st: 2,
+    };
+
+    render(
+      <DossierModal
+        property={parcelWithSuffix}
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+
+    const districtElem = screen.getByTestId("dossier-district");
+    expect(districtElem).toHaveTextContent("Houston Heights Historic District");
+    expect(districtElem).not.toHaveTextContent(
+      "Houston Heights Historic District Historic District"
     );
   });
 

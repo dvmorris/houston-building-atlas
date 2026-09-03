@@ -92,6 +92,7 @@ export const QrCodeSvg: React.FC<{
       height={size}
       aria-label={label}
       role="img"
+      shapeRendering="crispEdges"
       className="bg-white p-0.5 rounded border border-stone-300 flex-shrink-0"
     >
       <rect width={totalSize} height={totalSize} fill="#ffffff" />
@@ -564,13 +565,13 @@ export const DossierModal: React.FC<DossierModalProps> = ({
                       <span>{dossierData.contributingLabel}</span>
                     </span>
 
-                    {dossierData.districtName && (
+                    {dossierData.districtDisplayName && (
                       <div
                         data-testid="dossier-district"
                         className="text-xs font-semibold text-stone-700 flex items-center gap-1"
                       >
                         <MapPin className="w-3 h-3 text-amber-700" />
-                        <span>{dossierData.districtName} Historic District</span>
+                        <span>{dossierData.districtDisplayName}</span>
                       </div>
                     )}
                   </div>
