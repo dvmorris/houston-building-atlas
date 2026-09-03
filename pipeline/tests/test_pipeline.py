@@ -31,6 +31,33 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(res["use"], "RES")
         self.assertEqual(res["st"], 3.0)
 
+    def test_parcel_level_contrib_maintained_inside_district(self):
+        # A non-contributing parcel (e.g. modern infill built in 2018 with survey status contrib: 0)
+        # must preserve contrib: 0 even when spatial join identifies it as inside a historic district.
+        raw_non_contrib = {
+            "ACCOUNT": "0020040000005",
+            "DATE_ERECT": 2018,
+            "SITE_ADDR": "1918 KANE ST",
+            "OWNER_NAME": "URBAN INFILL DEVELOPERS LP",
+            "STATE_CLASS": "A1",
+            "STORIES": 3.0,
+            "contrib": 0
+        }
+        res = normalize_parcel_attributes(raw_non_contrib, district_info={"name": "Old Sixth Ward", "contrib": 1})
+        self.assertEqual(res["id"], "0020040000005")
+        self.assertEqual(res["yr"], 2018)
+        self.assertEqual(res["dist"], "Old Sixth Ward")
+        self.assertEqual(res["contrib"], 0)
+
+    def test_normalize_float_year_string(self):
+        raw = {
+            "ACCOUNT": "0010020000099",
+            "DATE_ERECT": "1925.0",
+            "SITE_ADDR": "100 MAIN ST"
+        }
+        res = normalize_parcel_attributes(raw)
+        self.assertEqual(res["yr"], 1925)
+
     def test_normalize_outside_district(self):
         raw = {
             "ACCOUNT": "0020030000002",

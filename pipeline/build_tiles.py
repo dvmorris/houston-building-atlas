@@ -62,7 +62,7 @@ def normalize_parcel_attributes(
     if raw_yr is None:
         raw_yr = raw_attrs.get("yr") if "yr" in raw_attrs else raw_attrs.get("year_built", 0)
     try:
-        yr = int(raw_yr) if raw_yr is not None else 0
+        yr = int(float(raw_yr)) if raw_yr is not None else 0
         if yr < 0 or yr > 2100:
             yr = 0
     except (ValueError, TypeError):
@@ -96,10 +96,16 @@ def normalize_parcel_attributes(
     if district_info is not None:
         if isinstance(district_info, dict):
             dist_name = district_info.get("name") or district_info.get("dist")
-            contrib_val = int(district_info.get("contrib", 1))
+            if "contrib" in raw_attrs and raw_attrs["contrib"] is not None:
+                contrib_val = int(raw_attrs["contrib"])
+            else:
+                contrib_val = int(district_info.get("contrib", 1))
         elif isinstance(district_info, str):
             dist_name = district_info
-            contrib_val = 1
+            if "contrib" in raw_attrs and raw_attrs["contrib"] is not None:
+                contrib_val = int(raw_attrs["contrib"])
+            else:
+                contrib_val = 1
     else:
         if "dist" in raw_attrs:
             dist_name = raw_attrs.get("dist")
