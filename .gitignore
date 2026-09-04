@@ -22,6 +22,9 @@ node_modules/
 # Local tools & caches
 .tools/
 .cache/
+pipeline/raw_data/
+pipeline/.venv/
+
 
 # Build outputs
 dist/

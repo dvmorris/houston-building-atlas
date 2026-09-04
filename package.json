@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pipeline:build": "bash pipeline/download_and_build.sh",
+    "pipeline:hcad": "pipeline/.venv/bin/python3 pipeline/build_hcad_tiles.py",
     "deploy:cloudflare": "bash scripts/deploy_cloudflare.sh",
     "deploy:gcs": "bash scripts/deploy_gcs.sh",
     "deploy:gh-pages": "bash scripts/deploy_github_pages.sh"
@@ -33,11 +34,13 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "geojson-vt": "^5.0.2",
     "jsdom": "^26.0.0",
     "postcss": "^8.5.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "vt-pbf": "^3.1.3"
   }
 }
