@@ -19,7 +19,7 @@ import base64
 import zlib
 import argparse
 import subprocess
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 try:
     import pyogrio.raw
@@ -42,8 +42,8 @@ BBOXES = {
     "central": (-95.46, 29.68, -95.30, 29.83),
     # City of Houston limits
     "city": (-95.65, 29.55, -95.10, 30.05),
-    # Full Harris County
-    "full": (-95.85, 29.50, -94.90, 30.18),
+    # Full Harris County (covers the entire county without cutoff)
+    "full": (-95.98, 29.50, -94.89, 30.18),
 }
 
 # Coordinate transformers
@@ -143,14 +143,14 @@ def normalize_parcel(
     }
 
 
-def extract_parcels(
+def extract_parcels_to_jsonl(
     gdb_path: str,
     districts_geojson_path: str,
+    output_jsonl_path: str,
     scope: str = "central",
-    batch_size: int = 50000,
     limit: Optional[int] = None,
-) -> Dict[str, Any]:
-    """Extract, reproject, and spatially tag parcels from HCAD GDB."""
+) -> Tuple[int, Tuple[float, float, float, float]]:
+    """Extract, reproject, and stream parcels directly to JSONL to eliminate V8 memory limits."""
     bbox_4326 = BBOXES.get(scope, BBOXES["central"])
     print(f"Scope: '{scope}', Bounding box (WGS84): {bbox_4326}")
     
@@ -180,121 +180,106 @@ def extract_parcels(
     owner_col = field_data[field_indices['CurrOwner']]
     yr_col = field_data[field_indices['yr_impr']]
     
-    print("Reprojecting geometries and performing spatial joins...")
+    print(f"Streaming reprojected features to {output_jsonl_path}...")
     t_join = time.time()
+    valid_count = 0
+    
+    os.makedirs(os.path.dirname(os.path.abspath(output_jsonl_path)), exist_ok=True)
+    with open(output_jsonl_path, "w", encoding="utf-8") as out_f:
+        geoms = shapely.from_wkb(geom_wkb_list)
+        for i, g in enumerate(geoms):
+            if g is None or g.is_empty:
+                continue
+            try:
+                g_wgs84 = geom_transform(TRANSFORMER_2278_TO_4326.transform, g)
+                centroid = g_wgs84.centroid
+                
+                props = normalize_parcel(
+                    hcad_col[i],
+                    addr_col[i],
+                    owner_col[i],
+                    yr_col[i],
+                    centroid,
+                    districts_tree,
+                    district_names,
+                )
+                
+                feat = {
+                    "type": "Feature",
+                    "geometry": mapping(g_wgs84),
+                    "properties": props,
+                }
+                out_f.write(json.dumps(feat) + "\n")
+                valid_count += 1
+                if valid_count % 250000 == 0:
+                    print(f"  Processed {valid_count} features ({time.time() - t_join:.1f}s)...")
+            except Exception:
+                continue
+    
+    print(f"Successfully wrote {valid_count} valid features in {time.time() - t_join:.2f}s.")
+    return valid_count, bbox_4326
+
+
+def extract_parcels(
+    gdb_path: str,
+    districts_geojson_path: str,
+    scope: str = "central",
+    batch_size: int = 50000,
+    limit: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Backward-compatible in-memory parcel extraction for tests."""
+    temp_jsonl = "pipeline/temp_extract.jsonl"
+    count, bbox = extract_parcels_to_jsonl(gdb_path, districts_geojson_path, temp_jsonl, scope=scope, limit=limit)
     features = []
-    
-    geoms = shapely.from_wkb(geom_wkb_list)
-    for i, g in enumerate(geoms):
-        if g is None or g.is_empty:
-            continue
-        try:
-            g_wgs84 = geom_transform(TRANSFORMER_2278_TO_4326.transform, g)
-            centroid = g_wgs84.centroid
-            
-            props = normalize_parcel(
-                hcad_col[i],
-                addr_col[i],
-                owner_col[i],
-                yr_col[i],
-                centroid,
-                districts_tree,
-                district_names,
-            )
-            
-            features.append({
-                "type": "Feature",
-                "geometry": mapping(g_wgs84),
-                "properties": props,
-            })
-        except Exception as err:
-            continue
-    
-    print(f"Processed {len(features)} valid features in {time.time() - t_join:.2f}s.")
+    with open(temp_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                features.append(json.loads(line))
+    if os.path.exists(temp_jsonl):
+        os.remove(temp_jsonl)
     return {
         "type": "FeatureCollection",
         "features": features,
-        "bbox": bbox_4326,
+        "bbox": bbox,
     }
 
 
 def build_vector_tiles_and_pmtiles(
-    geojson_data: Dict[str, Any],
+    jsonl_path: str,
+    bbox: Tuple[float, float, float, float],
     output_pmtiles_path: str,
     min_zoom: int = 10,
-    max_zoom: int = 16,
+    max_zoom: int = 15,
 ):
-    """Slice GeoJSON into vector tiles using Node.js geojson-vt and pack into PMTiles."""
-    temp_geojson = "pipeline/temp_parcels.geojson"
-    temp_tiles_json = "pipeline/temp_tiles.json"
+    """Slice GeoJSONL into vector tiles via tile_generator.cjs and pack into PMTiles."""
+    temp_tiles_jsonl = "pipeline/temp_tiles.jsonl"
+    bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
     
-    print(f"Writing {len(geojson_data['features'])} features to {temp_geojson}...")
-    with open(temp_geojson, "w", encoding="utf-8") as f:
-        json.dump(geojson_data, f)
-    
-    bbox = geojson_data.get("bbox", (-95.46, 29.68, -95.30, 29.83))
-    
-    # Node script to slice vector tiles
-    node_script = f"""
-    const geojsonvt = require('geojson-vt').default;
-    const vtpbf = require('vt-pbf');
-    const zlib = require('zlib');
-    const fs = require('fs');
-
-    const raw = JSON.parse(fs.readFileSync('{temp_geojson}', 'utf8'));
-    console.log('Building geojson-vt spatial index...');
-    const t0 = Date.now();
-    const tileIndex = new geojsonvt(raw, {{
-      maxZoom: {max_zoom},
-      indexMaxZoom: 14,
-      tolerance: 3,
-      extent: 4096,
-      buffer: 64,
-    }});
-    console.log(`Index built in ${{Date.now() - t0}}ms`);
-
-    const tiles = [];
-    const minLon = {bbox[0]}, minLat = {bbox[1]}, maxLon = {bbox[2]}, maxLat = {bbox[3]};
-
-    for (let z = {min_zoom}; z <= {max_zoom}; z++) {{
-      const n = Math.pow(2, z);
-      const xMin = Math.max(0, Math.floor((minLon + 180) / 360 * n));
-      const xMax = Math.min(n - 1, Math.floor((maxLon + 180) / 360 * n));
-      const latRadMin = minLat * Math.PI / 180;
-      const latRadMax = maxLat * Math.PI / 180;
-      const yMin = Math.max(0, Math.floor((1 - Math.log(Math.tan(latRadMax) + 1 / Math.cos(latRadMax)) / Math.PI) / 2 * n));
-      const yMax = Math.min(n - 1, Math.floor((1 - Math.log(Math.tan(latRadMin) + 1 / Math.cos(latRadMin)) / Math.PI) / 2 * n));
-
-      for (let x = xMin; x <= xMax; x++) {{
-        for (let y = yMin; y <= yMax; y++) {{
-          const tile = tileIndex.getTile(z, x, y);
-          if (tile && tile.features && tile.features.length > 0) {{
-            const pbf = vtpbf.fromGeojsonVt({{ parcels: tile }});
-            const compressed = zlib.gzipSync(pbf);
-            tiles.push({{ z, x, y, data: compressed.toString('base64') }});
-          }}
-        }}
-      }}
-    }}
-
-    console.log(`Generated ${{tiles.length}} active vector tiles.`);
-    fs.writeFileSync('{temp_tiles_json}', JSON.stringify(tiles));
-    """
-    
-    print("Executing Node.js vector tile generator...")
-    subprocess.run(["node", "--max-old-space-size=8192", "-e", node_script], check=True)
+    print(f"Executing Node.js vector tile generator (zooms {min_zoom} -> {max_zoom})...")
+    subprocess.run([
+        "node",
+        "--max-old-space-size=8192",
+        "pipeline/tile_generator.cjs",
+        "--input", jsonl_path,
+        "--output", temp_tiles_jsonl,
+        "--min-zoom", str(min_zoom),
+        "--max-zoom", str(max_zoom),
+        "--bbox", bbox_str,
+    ], check=True)
     
     print("Reading tiles and packaging into PMTiles archive...")
-    with open(temp_tiles_json, "r", encoding="utf-8") as f:
-        tiles = json.load(f)
-    
-    # Sort tiles strictly by Hilbert tile_id as required by PMTiles specification
     tiles_with_id = []
-    for t in tiles:
-        tid = pt.zxy_to_tileid(t["z"], t["x"], t["y"])
-        data = base64.b64decode(t["data"])
-        tiles_with_id.append((tid, data))
+    with open(temp_tiles_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            t = json.loads(line)
+            tid = pt.zxy_to_tileid(t["z"], t["x"], t["y"])
+            data = base64.b64decode(t["data"])
+            tiles_with_id.append((tid, data))
     
+    print(f"Sorting {len(tiles_with_id)} tiles by Hilbert tile_id...")
     tiles_with_id.sort(key=lambda item: item[0])
     
     os.makedirs(os.path.dirname(os.path.abspath(output_pmtiles_path)), exist_ok=True)
@@ -352,10 +337,10 @@ def build_vector_tiles_and_pmtiles(
         writer.finalize(header, metadata)
     
     # Cleanup temporary files
-    if os.path.exists(temp_geojson):
-        os.remove(temp_geojson)
-    if os.path.exists(temp_tiles_json):
-        os.remove(temp_tiles_json)
+    if os.path.exists(jsonl_path):
+        os.remove(jsonl_path)
+    if os.path.exists(temp_tiles_jsonl):
+        os.remove(temp_tiles_jsonl)
     
     size_mb = os.path.getsize(output_pmtiles_path) / (1024 * 1024)
     print(f"SUCCESS: Created PMTiles archive: {output_pmtiles_path} ({size_mb:.2f} MB, {len(tiles_with_id)} tiles)")
@@ -366,6 +351,8 @@ def main():
     parser.add_argument("--gdb", default="pipeline/raw_data/Parcels/Parcels.gdb", help="Path to Parcels.gdb")
     parser.add_argument("--districts", default="public/data/historic_districts.geojson", help="Historic districts GeoJSON")
     parser.add_argument("--scope", choices=["central", "city", "full"], default="central", help="Geographic scope")
+    parser.add_argument("--min-zoom", type=int, default=10, help="Minimum vector tile zoom")
+    parser.add_argument("--max-zoom", type=int, default=15, help="Maximum vector tile zoom")
     parser.add_argument("--limit", type=int, default=None, help="Feature limit for quick testing")
     parser.add_argument("--output", default="public/data/houston_parcels.pmtiles", help="Output PMTiles path")
     args = parser.parse_args()
@@ -375,19 +362,25 @@ def main():
         sys.exit(1)
     
     t_start = time.time()
-    geojson_data = extract_parcels(
+    temp_jsonl = "pipeline/temp_parcels.jsonl"
+    count, bbox = extract_parcels_to_jsonl(
         args.gdb,
         args.districts,
+        temp_jsonl,
         scope=args.scope,
         limit=args.limit
     )
     
     build_vector_tiles_and_pmtiles(
-        geojson_data,
+        temp_jsonl,
+        bbox,
         args.output,
+        min_zoom=args.min_zoom,
+        max_zoom=args.max_zoom,
     )
     print(f"Total pipeline elapsed time: {time.time() - t_start:.2f}s")
 
 
 if __name__ == "__main__":
     main()
+
