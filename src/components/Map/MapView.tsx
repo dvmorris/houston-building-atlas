@@ -130,35 +130,42 @@ export const DEFAULT_HOUSTON_CENTER: [number, number] = [-95.362, 29.759];
 export const DEFAULT_HOUSTON_ZOOM = 14.5;
 
 /**
- * CARTO Positron basemap style specification using high-speed raster tiles.
- * Provides a clean, neutral, light architectural backdrop that emphasizes historic color ramps.
+ * Generates CARTO Positron basemap style specification.
+ * Automatically appends ?api_key=... if VITE_CARTO_API_KEY is configured in .env.
  */
-export const CARTO_POSITRON_RASTER_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    "carto-positron": {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+export const getCartoPositronStyle = (apiKey?: string): maplibregl.StyleSpecification => {
+  const key = apiKey ?? (typeof import.meta !== "undefined" ? import.meta.env?.VITE_CARTO_API_KEY : undefined);
+  const query = key ? `?api_key=${encodeURIComponent(key)}` : "";
+
+  return {
+    version: 8,
+    sources: {
+      "carto-positron": {
+        type: "raster",
+        tiles: [
+          `https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png${query}`,
+          `https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png${query}`,
+          `https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png${query}`,
+          `https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png${query}`,
+        ],
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      },
     },
-  },
-  layers: [
-    {
-      id: "carto-positron-basemap",
-      type: "raster",
-      source: "carto-positron",
-      minzoom: 0,
-      maxzoom: 20,
-    },
-  ],
+    layers: [
+      {
+        id: "carto-positron-basemap",
+        type: "raster",
+        source: "carto-positron",
+        minzoom: 0,
+        maxzoom: 20,
+      },
+    ],
+  };
 };
+
+export const CARTO_POSITRON_RASTER_STYLE: maplibregl.StyleSpecification = getCartoPositronStyle();
 
 let pmtilesProtocolRegistered = false;
 

@@ -25,6 +25,10 @@ node_modules/
 pipeline/raw_data/
 pipeline/.venv/
 
+# Environment variables
+.env
+.env.*
+!.env.example
 
 # Build outputs
 dist/
