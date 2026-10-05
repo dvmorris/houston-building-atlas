@@ -208,9 +208,13 @@ export default function App() {
     }
   };
 
+  const assetBase = typeof import.meta !== "undefined" && import.meta.env?.BASE_URL
+    ? import.meta.env.BASE_URL.replace(/\/$/, "")
+    : "";
+
   // Load sample parcels to calculate live visible structure count and property lookup
   useEffect(() => {
-    fetch("/data/parcels_sample.geojson")
+    fetch(`${assetBase}/data/parcels_sample.geojson`.replace(/^\/\//, "/"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.features) {
@@ -245,11 +249,11 @@ export default function App() {
       .catch(() => {
         // Fallback gracefully in environments without fetch
       });
-  }, [initialMapState.parcelId]);
+  }, [initialMapState.parcelId, assetBase]);
 
   // Load authoritative countywide build-year histogram for real-time structure counts
   useEffect(() => {
-    fetch("/data/year_histogram.json")
+    fetch(`${assetBase}/data/year_histogram.json`.replace(/^\/\//, "/"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {

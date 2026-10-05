@@ -296,7 +296,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   // Load any extra parcels from geojson sample if available
   useEffect(() => {
-    fetch("/data/parcels_sample.geojson")
+    const assetBase = typeof import.meta !== "undefined" && import.meta.env?.BASE_URL
+      ? import.meta.env.BASE_URL.replace(/\/$/, "")
+      : "";
+    fetch(`${assetBase}/data/parcels_sample.geojson`.replace(/^\/\//, "/"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && Array.isArray(data.features)) {
