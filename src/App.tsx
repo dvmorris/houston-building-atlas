@@ -19,6 +19,7 @@ import {
   getOrInitCachedPMTiles,
   prefetchDowntownCore,
   prefetchHistoricCore,
+  getDataUrl,
 } from "./utils/tileCache";
 
 export default function App() {
@@ -213,13 +214,10 @@ export default function App() {
     }
   };
 
-  const assetBase = typeof import.meta !== "undefined" && import.meta.env?.BASE_URL
-    ? import.meta.env.BASE_URL.replace(/\/$/, "")
-    : "";
 
   // Load sample parcels to calculate live visible structure count and property lookup
   useEffect(() => {
-    fetch(`${assetBase}/data/parcels_sample.geojson`.replace(/^\/\//, "/"))
+    fetch(getDataUrl("data/parcels_sample.geojson"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.features) {
@@ -254,11 +252,11 @@ export default function App() {
       .catch(() => {
         // Fallback gracefully in environments without fetch
       });
-  }, [initialMapState.parcelId, assetBase]);
+  }, [initialMapState.parcelId]);
 
   // Load authoritative countywide build-year histogram for real-time structure counts
   useEffect(() => {
-    fetch(`${assetBase}/data/year_histogram.json`.replace(/^\/\//, "/"))
+    fetch(getDataUrl("data/year_histogram.json"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
@@ -275,21 +273,21 @@ export default function App() {
   } | null>(null);
 
   useEffect(() => {
-    const pmtilesUrl =
-      typeof window !== "undefined" && window.location?.href
-        ? new URL("data/houston_parcels.pmtiles", window.location.href).href
-        : "/data/houston_parcels.pmtiles";
-
+    const pmtilesUrl = getDataUrl("data/houston_parcels.pmtiles");
     const cachedPM = getOrInitCachedPMTiles(pmtilesUrl);
 
-    // Warm up Downtown core first, then historic districts in background
-    prefetchDowntownCore(cachedPM)
-      .then(() => {
-        prefetchHistoricCore(cachedPM, (completed, total) => {
-          setPreloadProgress({ completed, total });
-        }).catch(() => {});
-      })
-      .catch(() => {});
+    // Give MapLibre 1.2s to render initial visible Downtown viewport tiles first
+    const timer = setTimeout(() => {
+      prefetchDowntownCore(cachedPM)
+        .then(() => {
+          prefetchHistoricCore(cachedPM, (completed, total) => {
+            setPreloadProgress({ completed, total });
+          }).catch(() => {});
+        })
+        .catch(() => {});
+    }, 1200);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Initial landmark hydration from URL deep link
@@ -367,11 +365,7 @@ export default function App() {
       {/* Main Map View Area */}
       <main className="relative flex-1 min-h-0">
         <MapView
-          pmtilesUrl={
-            typeof window !== "undefined" && window.location?.href
-              ? new URL("data/houston_parcels.pmtiles", window.location.href).href
-              : "/data/houston_parcels.pmtiles"
-          }
+          pmtilesUrl={getDataUrl("data/houston_parcels.pmtiles")}
           initialCenter={[initialMapState.lng, initialMapState.lat]}
           initialZoom={initialMapState.zoom}
           yearMin={timeline.yearMin}

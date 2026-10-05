@@ -14,9 +14,9 @@ import {
 import { getHistoricClipPath } from "./HistoricSwipe";
 import {
   getOrInitCachedPMTiles,
-  prefetchDowntownCore,
   prefetchTiles,
   getTilesForBBox,
+  getDataUrl,
 } from "../../utils/tileCache";
 
 export interface ParcelProperties {
@@ -211,9 +211,9 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectLandmark,
   onSelectDistrict,
   pmtilesUrl,
-  parcelsGeojsonUrl = `${typeof import.meta !== "undefined" && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL.replace(/\/$/, "") : ""}/data/parcels_sample.geojson`.replace(/^\/\//, "/"),
-  districtsGeojsonUrl = `${typeof import.meta !== "undefined" && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL.replace(/\/$/, "") : ""}/data/historic_districts.geojson`.replace(/^\/\//, "/"),
-  landmarksGeojsonUrl = `${typeof import.meta !== "undefined" && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL.replace(/\/$/, "") : ""}/data/landmarks.geojson`.replace(/^\/\//, "/"),
+  parcelsGeojsonUrl = getDataUrl("data/parcels_sample.geojson"),
+  districtsGeojsonUrl = getDataUrl("data/historic_districts.geojson"),
+  landmarksGeojsonUrl = getDataUrl("data/landmarks.geojson"),
   initialCenter = DEFAULT_HOUSTON_CENTER,
   initialZoom = DEFAULT_HOUSTON_ZOOM,
   onMapLoaded,
@@ -275,8 +275,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const protocol = registerPMTilesProtocol();
     if (pmtilesUrl) {
-      const cachedPM = getOrInitCachedPMTiles(pmtilesUrl, protocol);
-      prefetchDowntownCore(cachedPM).catch(() => {});
+      getOrInitCachedPMTiles(pmtilesUrl, protocol);
     }
 
     const map = new maplibregl.Map({

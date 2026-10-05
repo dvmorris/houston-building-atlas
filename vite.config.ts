@@ -5,7 +5,10 @@ import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "./",
+  base:
+    process.env.VITE_BASE_PATH ||
+    process.env.BASE_PATH ||
+    (process.env.NODE_ENV === "production" ? "/houston-building-atlas/" : "/"),
   plugins: [react()],
   resolve: {
     alias: {

@@ -1,16 +1,59 @@
 /**
  * Preservation Houston Building Atlas - Persistent Vector Tile Cache & Preloader
  *
- * Implements a two-tier caching engine for PMTiles HTTP range requests:
+ * Implements a robust two-tier caching engine for PMTiles HTTP byte-range requests:
  * 1. Tier 1 (In-Memory Map): Sub-millisecond (0.01ms) instant access for active rendering & 60fps animations.
- * 2. Tier 2 (CacheStorage API): Persistent disk storage in the browser across sessions & offline use.
+ * 2. Tier 2 (IndexedDB Store): Persistent disk storage in the browser across sessions & reloads,
+ *    without W3C CacheStorage fragment or HTTP 206 limitations.
  *
  * Provides proactive background prefetching of the Downtown core & historic districts.
  */
 
-import { PMTiles, Protocol, RangeResponse, Source } from "pmtiles";
+import { PMTiles, Protocol, RangeResponse, Source, FetchSource } from "pmtiles";
 
-export const TILE_CACHE_NAME = "houston-pmtiles-cache-v1";
+export const IDB_NAME = "houston-pmtiles-cache-v2";
+export const IDB_STORE = "ranges";
+export const LEGACY_CACHE_NAME = "houston-pmtiles-cache-v1";
+
+// Safely clean up any broken legacy CacheStorage instances from previous versions
+if (typeof globalThis !== "undefined" && "caches" in globalThis) {
+  try {
+    globalThis.caches.delete(LEGACY_CACHE_NAME).catch(() => {});
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Resolves static data assets to their absolute URL regardless of hosting environment
+ * (GitHub Pages subdirectory, custom domain root, or local dev server).
+ */
+export function getDataUrl(relativePath: string): string {
+  const cleanPath = relativePath.replace(/^\/+/, "");
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    const rawBase =
+      (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "/";
+
+    if (rawBase.startsWith("http://") || rawBase.startsWith("https://")) {
+      return new URL(cleanPath, rawBase.endsWith("/") ? rawBase : `${rawBase}/`).href;
+    }
+
+    if (rawBase.startsWith("/")) {
+      const baseWithSlash = rawBase.endsWith("/") ? rawBase : `${rawBase}/`;
+      return new URL(cleanPath, new URL(baseWithSlash, window.location.origin)).href;
+    }
+
+    // Relative base fallback (e.g. "./" or ".")
+    let pathname = window.location.pathname;
+    if (!pathname.endsWith("/")) {
+      pathname = pathname + "/";
+    }
+    return new URL(cleanPath, new URL(pathname, window.location.origin)).href;
+  }
+
+  return `/${cleanPath}`;
+}
 
 export interface TileCoord {
   z: number;
@@ -18,36 +61,53 @@ export interface TileCoord {
   y: number;
 }
 
+// Persistent IndexedDB singleton promise
+let idbPromise: Promise<IDBDatabase | null> | null = null;
+
+export function getTileDB(): Promise<IDBDatabase | null> {
+  if (idbPromise) return idbPromise;
+  if (typeof indexedDB === "undefined") {
+    idbPromise = Promise.resolve(null);
+    return idbPromise;
+  }
+
+  idbPromise = new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+
+  return idbPromise;
+}
+
 /**
- * Custom PMTiles Source backed by browser CacheStorage and in-memory LRU/Map.
+ * Custom PMTiles Source backed by browser IndexedDB and in-memory LRU/Map.
+ * Delegates actual byte-range network fetching to PMTiles' official FetchSource.
  */
 export class CachedFetchSource implements Source {
   readonly url: string;
   readonly memoryCache: Map<string, ArrayBuffer> = new Map();
-  private cacheStoragePromise: Promise<Cache | null> | null = null;
+  private nativeSource: FetchSource;
   private maxMemoryEntries: number;
 
   constructor(url: string, maxMemoryEntries = 500) {
     this.url = url;
     this.maxMemoryEntries = maxMemoryEntries;
+    this.nativeSource = new FetchSource(url);
   }
 
   getKey(): string {
     return this.url;
-  }
-
-  private getCacheStorage(): Promise<Cache | null> {
-    if (this.cacheStoragePromise) {
-      return this.cacheStoragePromise;
-    }
-    if (typeof globalThis !== "undefined" && "caches" in globalThis) {
-      this.cacheStoragePromise = globalThis.caches
-        .open(TILE_CACHE_NAME)
-        .catch(() => null);
-    } else {
-      this.cacheStoragePromise = Promise.resolve(null);
-    }
-    return this.cacheStoragePromise;
   }
 
   private makeCacheKey(offset: number, length: number): string {
@@ -62,72 +122,57 @@ export class CachedFetchSource implements Source {
   ): Promise<RangeResponse> {
     const rangeKey = this.makeCacheKey(offset, length);
 
-    // 1. Check in-memory Map
+    // 1. Tier 1: Check in-memory Map (0.01ms instant access for 60fps animations)
     if (this.memoryCache.has(rangeKey)) {
       return {
         data: this.memoryCache.get(rangeKey)!,
       };
     }
 
-    // 2. Check persistent Browser CacheStorage API
-    const cache = await this.getCacheStorage();
-    if (cache) {
+    // 2. Tier 2: Check persistent IndexedDB disk cache
+    const db = await getTileDB();
+    if (db) {
       try {
-        const cachedResponse = await cache.match(rangeKey);
-        if (cachedResponse) {
-          const buf = await cachedResponse.arrayBuffer();
-          this.setMemoryCache(rangeKey, buf);
-          return {
-            data: buf,
-            etag: cachedResponse.headers.get("Etag") || undefined,
-            cacheControl: cachedResponse.headers.get("Cache-Control") || undefined,
-            expires: cachedResponse.headers.get("Expires") || undefined,
-          };
+        const cachedData = await new Promise<ArrayBuffer | null>((resolve) => {
+          const tx = db.transaction(IDB_STORE, "readonly");
+          const store = tx.objectStore(IDB_STORE);
+          const req = store.get(rangeKey);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+
+        if (cachedData) {
+          this.setMemoryCache(rangeKey, cachedData);
+          return { data: cachedData };
         }
       } catch {
         // Fall back to network fetch
       }
     }
 
-    // 3. Network Fetch with Range Header
-    const requestHeaders = new Headers();
-    requestHeaders.set("Range", `bytes=${offset}-${offset + length - 1}`);
-
-    const resp = await fetch(this.url, {
+    // 3. Network Fetch using PMTiles' battle-tested FetchSource
+    const res = await this.nativeSource.getBytes(
+      offset,
+      length,
       signal,
-      headers: requestHeaders,
-    });
+      passedEtag
+    );
 
-    if (resp.status !== 200 && resp.status !== 206) {
-      throw new Error(`PMTiles fetch failed: HTTP ${resp.status} for ${rangeKey}`);
-    }
+    // Save to Tier 1 Memory Cache
+    this.setMemoryCache(rangeKey, res.data);
 
-    const data = await resp.arrayBuffer();
-    this.setMemoryCache(rangeKey, data);
-
-    // 4. Save to persistent CacheStorage in background
-    if (cache) {
+    // Save to Tier 2 Persistent IndexedDB in background
+    if (db && res.data) {
       try {
-        const responseToCache = new Response(data.slice(0), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/octet-stream",
-            "Content-Length": String(data.byteLength),
-            ...(resp.headers.get("Etag") ? { Etag: resp.headers.get("Etag")! } : {}),
-          },
-        });
-        cache.put(rangeKey, responseToCache).catch(() => {});
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        const store = tx.objectStore(IDB_STORE);
+        store.put(res.data, rangeKey);
       } catch {
-        // Ignore CacheStorage storage quota errors
+        // Ignore quota / transaction errors
       }
     }
 
-    return {
-      data,
-      etag: resp.headers.get("Etag") || passedEtag || undefined,
-      cacheControl: resp.headers.get("Cache-Control") || undefined,
-      expires: resp.headers.get("Expires") || undefined,
-    };
+    return res;
   }
 
   private setMemoryCache(key: string, data: ArrayBuffer): void {
@@ -232,7 +277,7 @@ export async function prefetchTiles(
   }
 
   let completed = 0;
-  const concurrency = 6; // Max parallel fetch pool
+  const concurrency = 3; // Keep pool reasonable to prevent socket exhaustion
   let index = 0;
 
   const worker = async () => {
@@ -293,15 +338,22 @@ export async function prefetchHistoricCore(
 }
 
 /**
- * Clears the persistent tile CacheStorage.
+ * Clears the persistent tile IndexedDB store and in-memory caches.
  */
 export async function clearTileCache(): Promise<boolean> {
   cachedInstances.forEach((entry) => entry.source.clearMemory());
+  if (typeof indexedDB !== "undefined") {
+    try {
+      indexedDB.deleteDatabase(IDB_NAME);
+    } catch {
+      // Ignore
+    }
+  }
   if (typeof globalThis !== "undefined" && "caches" in globalThis) {
     try {
-      return await globalThis.caches.delete(TILE_CACHE_NAME);
+      await globalThis.caches.delete(LEGACY_CACHE_NAME);
     } catch {
-      return false;
+      // Ignore
     }
   }
   return true;

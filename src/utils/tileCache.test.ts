@@ -6,9 +6,24 @@ import {
   getOrInitCachedPMTiles,
   prefetchTiles,
   DOWNTOWN_BBOX,
+  getDataUrl,
 } from "./tileCache";
 
 describe("tileCache & Preloader", () => {
+  describe("getDataUrl", () => {
+    it("resolves clean asset path with fallback", () => {
+      const url = getDataUrl("data/parcels_sample.geojson");
+      expect(url).toContain("data/parcels_sample.geojson");
+      expect(url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")).toBe(true);
+    });
+
+    it("strips leading slashes from relative path", () => {
+      const url = getDataUrl("/data/houston_parcels.pmtiles");
+      expect(url).toContain("data/houston_parcels.pmtiles");
+      expect(url).not.toContain("//data");
+    });
+  });
+
   describe("lonLatToTile & getTilesForBBox", () => {
     it("converts Downtown Houston coordinates to tile coordinates at zoom 14", () => {
       // Downtown Houston: -95.362, 29.759
