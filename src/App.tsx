@@ -15,6 +15,11 @@ import { HistoricSwipe } from "./components/Map/HistoricSwipe";
 import { useTimelinePlayer } from "./hooks/useTimelinePlayer";
 import { useGeolocator } from "./hooks/useGeolocator";
 import { useMapState, parseMapState } from "./hooks/useMapState";
+import {
+  getOrInitCachedPMTiles,
+  prefetchDowntownCore,
+  prefetchHistoricCore,
+} from "./utils/tileCache";
 
 export default function App() {
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -263,6 +268,30 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  // Background vector tile preloading & caching across Downtown and Historic Districts
+  const [preloadProgress, setPreloadProgress] = useState<{
+    completed: number;
+    total: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const pmtilesUrl =
+      typeof window !== "undefined" && window.location?.href
+        ? new URL("data/houston_parcels.pmtiles", window.location.href).href
+        : "/data/houston_parcels.pmtiles";
+
+    const cachedPM = getOrInitCachedPMTiles(pmtilesUrl);
+
+    // Warm up Downtown core first, then historic districts in background
+    prefetchDowntownCore(cachedPM)
+      .then(() => {
+        prefetchHistoricCore(cachedPM, (completed, total) => {
+          setPreloadProgress({ completed, total });
+        }).catch(() => {});
+      })
+      .catch(() => {});
+  }, []);
+
   // Initial landmark hydration from URL deep link
   useEffect(() => {
     if (initialMapState.landmarkId && !selectedLandmark) {
@@ -306,6 +335,7 @@ export default function App() {
         yearMax={timeline.yearMax}
         onYearMinChange={timeline.setYearMin}
         onYearMaxChange={timeline.setYearMax}
+        preloadProgress={preloadProgress}
       />
 
       {/* Dismissible Geolocation Error Toast Notification */}
@@ -411,6 +441,7 @@ export default function App() {
         yearMax={timeline.yearMax}
         onYearChange={timeline.setYearRange}
         isPlaying={timeline.isPlaying}
+        isBuffering={timeline.isBuffering}
         onTogglePlay={timeline.togglePlay}
         speed={timeline.speed}
         onSpeedChange={timeline.setSpeed}

@@ -67,6 +67,10 @@ export interface TimelineBarProps {
    */
   totalVisibleCount?: number;
   /**
+   * Whether map tiles are currently buffering during playback
+   */
+  isBuffering?: boolean;
+  /**
    * Optional custom CSS class name
    */
   className?: string;
@@ -81,6 +85,7 @@ export const TimelineBar: React.FC<TimelineBarProps> = ({
   minBound = DEFAULT_MIN_BOUND,
   maxBound = DEFAULT_MAX_BOUND,
   isPlaying: controlledIsPlaying,
+  isBuffering: controlledIsBuffering,
   onTogglePlay: controlledOnTogglePlay,
   speed: controlledSpeed,
   onSpeedChange: controlledOnSpeedChange,
@@ -110,6 +115,11 @@ export const TimelineBar: React.FC<TimelineBarProps> = ({
     controlledIsPlaying !== undefined
       ? controlledIsPlaying
       : internalPlayer.isPlaying;
+
+  const isBuffering =
+    controlledIsBuffering !== undefined
+      ? controlledIsBuffering
+      : internalPlayer.isBuffering;
 
   const speed =
     controlledSpeed !== undefined ? controlledSpeed : internalPlayer.speed;
@@ -253,6 +263,19 @@ export const TimelineBar: React.FC<TimelineBarProps> = ({
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
+
+            {/* Buffering Indicator */}
+            {isBuffering && (
+              <span
+                role="status"
+                aria-label="Buffering map tiles"
+                data-testid="timeline-buffering-indicator"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-amber-300 bg-amber-950/70 border border-amber-600/50 rounded-full animate-pulse shadow-sm"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+                Buffering...
+              </span>
+            )}
           </div>
 
           {/* Center: Current Active Year Span & Era Badge */}

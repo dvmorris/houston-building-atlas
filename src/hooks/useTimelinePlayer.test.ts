@@ -447,12 +447,14 @@ describe("useTimelinePlayer", () => {
     // Tiles are not loaded initially, so playback holds until idle
     expect(mockMap.once).toHaveBeenCalledWith("idle", expect.any(Function));
     expect(result.current.yearMax).toBe(1900);
+    expect(result.current.isBuffering).toBe(true);
 
     // Simulate tiles finishing loading
     tilesLoaded = true;
     act(() => {
       idleListener?.();
     });
+    expect(result.current.isBuffering).toBe(false);
 
     // Advance 150ms
     act(() => {

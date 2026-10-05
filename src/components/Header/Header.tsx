@@ -44,6 +44,7 @@ export interface HeaderProps {
   yearMax?: number;
   onYearMinChange?: (year: number) => void;
   onYearMaxChange?: (year: number) => void;
+  preloadProgress?: { completed: number; total: number } | null;
   className?: string;
   onOpenAbout?: () => void;
   onOpenDistrictsGuide?: () => void;
@@ -61,6 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
   yearMax,
   onYearMinChange,
   onYearMaxChange,
+  preloadProgress,
   className = "",
   onOpenAbout,
   onOpenDistrictsGuide,
@@ -208,6 +210,39 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Actions, Historic Swipe Toggle, GPS Walking Tour, & Nav Links */}
         <div className="flex items-center gap-2 text-xs text-stone-300 flex-shrink-0">
+          {/* Offline Cache & Preload Status Pill */}
+          {preloadProgress && (
+            <div
+              role="status"
+              aria-label="Atlas offline caching status"
+              data-testid="atlas-preload-status"
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-stone-300 bg-stone-800/90 border border-stone-700/60 rounded-full"
+              title={
+                preloadProgress.completed < preloadProgress.total
+                  ? `Pre-caching Houston parcels for instant 60fps playback (${preloadProgress.completed}/${preloadProgress.total} tiles)`
+                  : "Core Houston parcels cached in browser storage for instant 60fps playback"
+              }
+            >
+              {preloadProgress.completed < preloadProgress.total ? (
+                <>
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+                  <span className="text-amber-200">
+                    Buffering:{" "}
+                    {Math.round(
+                      (preloadProgress.completed / preloadProgress.total) * 100
+                    )}
+                    %
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-3 w-3 text-emerald-400" />
+                  <span className="text-emerald-300">Offline Cached</span>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Compare Historic Map Swipe Toggle */}
           <button
             type="button"

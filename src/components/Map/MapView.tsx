@@ -12,6 +12,12 @@ import {
   createHistoricRasterSource,
 } from "../../utils/historicLayers";
 import { getHistoricClipPath } from "./HistoricSwipe";
+import {
+  getOrInitCachedPMTiles,
+  prefetchDowntownCore,
+  prefetchTiles,
+  getTilesForBBox,
+} from "../../utils/tileCache";
 
 export interface ParcelProperties {
   id: string;
@@ -177,19 +183,22 @@ export const getCartoPositronStyle = (apiKey?: string): maplibregl.StyleSpecific
 
 export const CARTO_POSITRON_RASTER_STYLE: maplibregl.StyleSpecification = getCartoPositronStyle();
 
-let pmtilesProtocolRegistered = false;
+let globalPMTilesProtocol: Protocol | null = null;
 
 /**
- * Ensures the PMTiles protocol is registered with MapLibre GL JS exactly once.
+ * Ensures the PMTiles protocol is registered with MapLibre GL JS exactly once
+ * and returns the active protocol instance.
  */
-export function registerPMTilesProtocol(): void {
-  if (pmtilesProtocolRegistered) return;
+export function registerPMTilesProtocol(): Protocol {
+  if (globalPMTilesProtocol) return globalPMTilesProtocol;
   try {
     const protocol = new Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
-    pmtilesProtocolRegistered = true;
+    globalPMTilesProtocol = protocol;
+    return protocol;
   } catch {
     // Protocol might already be added or unsupported in environment
+    return new Protocol();
   }
 }
 
@@ -264,7 +273,11 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    registerPMTilesProtocol();
+    const protocol = registerPMTilesProtocol();
+    if (pmtilesUrl) {
+      const cachedPM = getOrInitCachedPMTiles(pmtilesUrl, protocol);
+      prefetchDowntownCore(cachedPM).catch(() => {});
+    }
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -273,6 +286,8 @@ export const MapView: React.FC<MapViewProps> = ({
       zoom: initialZoom,
       minZoom: 9,
       maxZoom: 19,
+      maxTileCacheSize: 500,
+      fadeDuration: 0,
       attributionControl: false,
     });
 
@@ -708,6 +723,29 @@ export const MapView: React.FC<MapViewProps> = ({
           onSelectParcelRef.current?.(null);
           onSelectLandmarkRef.current?.(null);
           onSelectDistrictRef.current?.(null);
+        }
+      });
+
+      // Automatically prefetch vector tiles covering the active viewport into persistent cache
+      map.on("moveend", () => {
+        if (pmtilesUrl && typeof map.getBounds === "function" && typeof map.getZoom === "function") {
+          try {
+            const b = map.getBounds();
+            const z = Math.round(map.getZoom());
+            if (z >= 12 && z <= 16) {
+              const bbox: [number, number, number, number] = [
+                b.getWest(),
+                b.getSouth(),
+                b.getEast(),
+                b.getNorth(),
+              ];
+              const tiles = getTilesForBBox(bbox, z, Math.min(15, z + 1));
+              const cachedPM = getOrInitCachedPMTiles(pmtilesUrl);
+              prefetchTiles(cachedPM, tiles).catch(() => {});
+            }
+          } catch {
+            // Ignore in environments without full bounds
+          }
         }
       });
 

@@ -177,4 +177,15 @@ describe("TimelineBar", () => {
     fireEvent.click(playBtn);
     expect(onTogglePlay).toHaveBeenCalled();
   });
+
+  it("displays buffering indicator when isBuffering is true", () => {
+    const { rerender } = render(
+      <TimelineBar isPlaying={true} isBuffering={false} />
+    );
+    expect(screen.queryByTestId("timeline-buffering-indicator")).not.toBeInTheDocument();
+
+    rerender(<TimelineBar isPlaying={true} isBuffering={true} />);
+    expect(screen.getByTestId("timeline-buffering-indicator")).toBeInTheDocument();
+    expect(screen.getByText(/Buffering.../i)).toBeInTheDocument();
+  });
 });

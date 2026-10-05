@@ -68,6 +68,7 @@ export interface UseTimelinePlayerReturn {
   yearMin: number;
   yearMax: number;
   isPlaying: boolean;
+  isBuffering: boolean;
   speed: TimelineSpeed;
   loop: boolean;
   play: () => void;
@@ -105,6 +106,7 @@ export function useTimelinePlayer(
     Math.max(yearMin, Math.min(initialYearMax, maxBound))
   );
   const [isPlaying, setIsPlaying] = useState<boolean>(initialPlaying);
+  const [isBuffering, setIsBuffering] = useState<boolean>(false);
   const [speed, setSpeed] = useState<TimelineSpeed>(initialSpeed);
   const [loop, setLoop] = useState<boolean>(initialLoop);
 
@@ -182,6 +184,7 @@ export function useTimelinePlayer(
 
   const pause = useCallback(() => {
     setIsPlaying(false);
+    setIsBuffering(false);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -198,13 +201,17 @@ export function useTimelinePlayer(
 
   const reset = useCallback(() => {
     setIsPlaying(false);
+    setIsBuffering(false);
     setYearRange(minBound, maxBound);
   }, [minBound, maxBound, setYearRange]);
 
   // Closed-loop adaptive timelapse playback ticker
   // Automatically throttles progression to match browser rendering speed and tile availability
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      setIsBuffering(false);
+      return;
+    }
 
     let isCancelled = false;
     let timerId: ReturnType<typeof setTimeout> | null = null;
@@ -212,6 +219,7 @@ export function useTimelinePlayer(
     const tick = () => {
       if (isCancelled) return;
 
+      const activeMap = mapRef?.current ?? mapOption ?? null;
       const currentMax = yearMaxRef.current;
       const currentMin = yearMinRef.current;
       const targetInterval = SPEED_INTERVALS[speed] ?? 150;
@@ -229,7 +237,36 @@ export function useTimelinePlayer(
         }, remaining);
       };
 
-      // Check if we need to loop back
+      // 1. If map instance exists, ensure tiles are loaded before advancing
+      if (
+        activeMap &&
+        typeof activeMap.areTilesLoaded === "function" &&
+        !activeMap.areTilesLoaded()
+      ) {
+        setIsBuffering(true);
+        const onIdle = () => {
+          if (isCancelled) return;
+          setIsBuffering(false);
+          scheduleNext();
+        };
+        activeMap.once("idle", onIdle);
+
+        // Resilient safety timeout in case a tile drops
+        timerId = setTimeout(() => {
+          if (typeof activeMap.off === "function") {
+            activeMap.off("idle", onIdle);
+          }
+          if (!isCancelled) {
+            setIsBuffering(false);
+            scheduleNext();
+          }
+        }, 2000);
+        return;
+      }
+
+      setIsBuffering(false);
+
+      // 2. Check if we need to loop back
       if (currentMax >= maxBound) {
         if (loopRef.current) {
           const resetYear = currentMin >= maxBound ? minBound : currentMin;
@@ -243,7 +280,7 @@ export function useTimelinePlayer(
         return;
       }
 
-      // Normal progression: step forward 1 year
+      // 3. Normal progression: step forward 1 year
       const nextMax = Math.min(maxBound, currentMax + 1);
 
       // Advance year state and notify listeners
@@ -256,15 +293,13 @@ export function useTimelinePlayer(
         return;
       }
 
-      const activeMap = mapRef?.current ?? mapOption ?? null;
-
       if (!activeMap) {
         // Fallback for headless / unit test environment without a live MapLibre instance
         scheduleNext();
         return;
       }
 
-      // Live MapLibre instance present: closed-loop synchronization with map render and tile loading
+      // 4. Wait for MapLibre to complete drawing the updated year on the WebGL canvas
       let done = false;
       const proceed = () => {
         if (done || isCancelled) return;
@@ -272,37 +307,9 @@ export function useTimelinePlayer(
         scheduleNext();
       };
 
-      const checkTiles = () => {
-        if (isCancelled || done) return;
-
-        // Verify if all vector tiles in the current viewport have finished loading
-        if (
-          typeof activeMap.areTilesLoaded === "function" &&
-          !activeMap.areTilesLoaded()
-        ) {
-          const onIdle = () => {
-            if (isCancelled || done) return;
-            proceed();
-          };
-          activeMap.once("idle", onIdle);
-
-          // Safety timeout so playback never hangs indefinitely on a dropped tile
-          timerId = setTimeout(() => {
-            if (typeof activeMap.off === "function") {
-              activeMap.off("idle", onIdle);
-            }
-            proceed();
-          }, 350);
-          return;
-        }
-
-        proceed();
-      };
-
-      // Wait for MapLibre to complete drawing the updated year on the WebGL canvas
       if (typeof activeMap.once === "function") {
         const onRender = () => {
-          checkTiles();
+          proceed();
         };
         activeMap.once("render", onRender);
 
@@ -311,7 +318,7 @@ export function useTimelinePlayer(
           if (typeof activeMap.off === "function") {
             activeMap.off("render", onRender);
           }
-          checkTiles();
+          proceed();
         }, targetInterval + 150);
       } else {
         scheduleNext();
@@ -327,14 +334,24 @@ export function useTimelinePlayer(
       typeof activeMap.areTilesLoaded === "function" &&
       !activeMap.areTilesLoaded()
     ) {
+      setIsBuffering(true);
       const onInitialIdle = () => {
         if (isCancelled) return;
+        setIsBuffering(false);
         timerId = setTimeout(() => {
           tick();
         }, initialDelay);
       };
       activeMap.once("idle", onInitialIdle);
-      timerId = setTimeout(onInitialIdle, 400);
+      timerId = setTimeout(() => {
+        if (typeof activeMap.off === "function") {
+          activeMap.off("idle", onInitialIdle);
+        }
+        if (!isCancelled) {
+          setIsBuffering(false);
+          tick();
+        }
+      }, 2000);
     } else {
       timerId = setTimeout(() => {
         tick();
@@ -351,6 +368,7 @@ export function useTimelinePlayer(
     yearMin,
     yearMax,
     isPlaying,
+    isBuffering,
     speed,
     loop,
     play,
