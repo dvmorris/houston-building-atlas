@@ -129,13 +129,18 @@ export interface MapViewProps {
 export const DEFAULT_HOUSTON_CENTER: [number, number] = [-95.362, 29.759];
 export const DEFAULT_HOUSTON_ZOOM = 14.5;
 
+export const DEFAULT_CARTO_KEY = "cb1_4ajs_1_00added5e5179378a7fb9996";
+
 /**
  * Generates CARTO Positron basemap style specification.
- * Automatically appends ?api_key=... if VITE_CARTO_API_KEY is configured in .env.
+ * Automatically appends ?key=... as required by CARTO's basemap servers.
  */
 export const getCartoPositronStyle = (apiKey?: string): maplibregl.StyleSpecification => {
-  const key = apiKey ?? (typeof import.meta !== "undefined" ? import.meta.env?.VITE_CARTO_API_KEY : undefined);
-  const query = key ? `?api_key=${encodeURIComponent(key)}` : "";
+  const key =
+    apiKey ??
+    (typeof import.meta !== "undefined" ? import.meta.env?.VITE_CARTO_API_KEY : undefined) ??
+    DEFAULT_CARTO_KEY;
+  const query = key ? `?key=${encodeURIComponent(key)}&api_key=${encodeURIComponent(key)}` : "";
 
   return {
     version: 8,
