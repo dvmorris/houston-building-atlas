@@ -242,6 +242,49 @@ class TestPipeline(unittest.TestCase):
                     self.assertIn("yr", props)
                     self.assertIn("designation", props)
 
+    def test_authoritative_historic_districts_dataset(self):
+        districts_path = Path(__file__).resolve().parent.parent.parent / "public" / "data" / "historic_districts.geojson"
+        self.assertTrue(districts_path.exists())
+        with open(districts_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        features = data.get("features", [])
+        self.assertGreaterEqual(len(features), 23, "Must contain all 23 official City of Houston Historic Districts")
+        names = [f["properties"]["name"] for f in features]
+        self.assertIn("Old Sixth Ward", names)
+        self.assertIn("Norhill", names)
+        self.assertIn("Courtland Place", names)
+        self.assertIn("Glenbrook Valley", names)
+        self.assertIn("Brunner-Harmonium", names)
+        self.assertIn("Freedmen's Town", names)
+
+    def test_year_histogram_dataset(self):
+        hist_path = Path(__file__).resolve().parent.parent.parent / "public" / "data" / "year_histogram.json"
+        self.assertTrue(hist_path.exists())
+        with open(hist_path, "r", encoding="utf-8") as f:
+            hist = json.load(f)
+        self.assertIn("1836", hist)
+        self.assertIn("1920", hist)
+        self.assertIn("2026", hist)
+        total_structures = sum(hist.values())
+        self.assertGreater(total_structures, 1000000, "Countywide dated structures must exceed 1,000,000")
+
+    def test_institutional_founding_year_enrichment(self):
+        from pipeline.build_hcad_tiles import normalize_parcel
+        from shapely.geometry import Point
+        dummy_point = Point(-95.40, 29.72)
+
+        # Rice University campus with yr_impr=0 should be enriched to 1912
+        rice = normalize_parcel("0421790000001", "6100 MAIN ST", "WM RICE INSTITUTE", 0, dummy_point, None, [])
+        self.assertEqual(rice["yr"], 1912)
+
+        # Hermann Park with yr_impr=0 should be enriched to 1914
+        hermann = normalize_parcel("0421790000004", "6001 FANNIN ST", "CITY OF HOUSTON", 0, dummy_point, None, [])
+        self.assertEqual(hermann["yr"], 1914)
+
+        # Texas Medical Center with yr_impr=0 should be enriched to 1945
+        tmc = normalize_parcel("0421800000001", "6565 FANNIN ST", "METHODIST HOSPITAL", 0, dummy_point, None, [])
+        self.assertEqual(tmc["yr"], 1945)
+
 
 if __name__ == "__main__":
     unittest.main()

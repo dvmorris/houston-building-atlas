@@ -13,7 +13,7 @@
  * 6. Responsive mobile drawer navigation
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Compass,
   Layers,
@@ -25,9 +25,13 @@ import {
   Menu,
   CheckCircle,
   Building2,
+  Shield,
+  Search,
+  MapPin,
 } from "lucide-react";
 import { SearchBar, SearchSelectLocation } from "./SearchBar";
 import { DistrictProperties } from "../Map/MapView";
+import { HISTORIC_DISTRICTS } from "../../utils/historicDistricts";
 
 export interface HeaderProps {
   onSelectLocation: (location: SearchSelectLocation) => void;
@@ -72,6 +76,27 @@ export const Header: React.FC<HeaderProps> = ({
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackMsg, setFeedbackMsg] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Historic districts guide state
+  const [districtSearch, setDistrictSearch] = useState("");
+  const [districtCategory, setDistrictCategory] = useState<"all" | "city" | "heritage" | "nrhp">("all");
+
+  const filteredDistricts = useMemo(() => {
+    return HISTORIC_DISTRICTS.filter((d) => {
+      if (districtCategory === "city" && d.designation_type !== "City Historic District") return false;
+      if (districtCategory === "heritage" && d.designation_type !== "City Heritage District") return false;
+      if (districtCategory === "nrhp" && d.designation_type !== "National Register Historic District") return false;
+
+      if (!districtSearch.trim()) return true;
+      const q = districtSearch.toLowerCase();
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.full_name.toLowerCase().includes(q) ||
+        d.arch_styles.some((s) => s.toLowerCase().includes(q)) ||
+        d.description.toLowerCase().includes(q)
+      );
+    });
+  }, [districtSearch, districtCategory]);
 
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -426,18 +451,26 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => setDistrictsModalOpen(false)}
         >
           <div
-            className="bg-stone-900 border border-stone-700 rounded-xl max-w-2xl w-full p-6 text-stone-200 shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            className="bg-stone-900 border border-stone-700 rounded-xl max-w-4xl w-full p-6 text-stone-200 shadow-2xl space-y-4 max-h-[88vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-stone-800 pb-3 flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <BookOpen className="w-6 h-6 text-sky-400" />
-                <h2
-                  id="districts-guide-title"
-                  className="text-lg font-bold text-stone-100"
-                >
-                  Houston Historic Districts Guide
-                </h2>
+                <div>
+                  <h2
+                    id="districts-guide-title"
+                    className="text-lg font-bold text-stone-100 flex items-center gap-2"
+                  >
+                    Houston Historic Districts Guide
+                    <span className="text-xs font-normal text-stone-400">
+                      ({HISTORIC_DISTRICTS.length} Designated Districts)
+                    </span>
+                  </h2>
+                  <p className="text-xs text-stone-400">
+                    City of Houston Planning &amp; Development Department &bull; Chapter 33 Code of Ordinances
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -449,69 +482,178 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            <div className="text-xs text-stone-300 space-y-3 overflow-y-auto pr-1 leading-relaxed">
-              <p>
-                Houston designates historic districts to protect neighborhood
-                architectural integrity and community character under Chapter 33
-                of the City Code of Ordinances.
-              </p>
+            {/* Search and Category Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 flex-shrink-0">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={districtSearch}
+                  onChange={(e) => setDistrictSearch(e.target.value)}
+                  placeholder="Search districts by name, architectural style, or history..."
+                  aria-label="Filter historic districts"
+                  className="w-full h-8.5 pl-9 pr-8 bg-stone-800/80 border border-stone-700/80 rounded-lg text-xs text-stone-100 placeholder-stone-400 focus:outline-none focus:border-amber-500/80 focus:ring-1 focus:ring-amber-500/40"
+                />
+                {districtSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setDistrictSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-stone-800/80 rounded-lg border border-stone-700/60">
-                  <h4 className="font-semibold text-amber-300 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-amber-400" />
-                    Downtown Historic District
-                  </h4>
-                  <p className="text-[11px] text-stone-400 mt-1">
-                    Houston’s commercial and civic core centered around Market
-                    Square, featuring 19th-century Victorian commercial blocks
-                    and Beaux-Arts skyscrapers.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-stone-800/80 rounded-lg border border-stone-700/60">
-                  <h4 className="font-semibold text-amber-300 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-amber-400" />
-                    Houston Heights (East, West, South)
-                  </h4>
-                  <p className="text-[11px] text-stone-400 mt-1">
-                    Planned 1891 streetcar suburb celebrated for Queen Anne
-                    Victorian residences, folk cottages, and Craftsman
-                    bungalows along Heights Boulevard.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-stone-800/80 rounded-lg border border-stone-700/60">
-                  <h4 className="font-semibold text-amber-300 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-amber-400" />
-                    Old Sixth Ward
-                  </h4>
-                  <p className="text-[11px] text-stone-400 mt-1">
-                    Houston's oldest intact neighborhood with the largest
-                    concentration of Victorian cottages and Greek Revival homes
-                    in the state of Texas.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-stone-800/80 rounded-lg border border-stone-700/60">
-                  <h4 className="font-semibold text-amber-300 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-amber-400" />
-                    Boulevard Oaks & Broadacres
-                  </h4>
-                  <p className="text-[11px] text-stone-400 mt-1">
-                    Picturesque 1920s tree-lined avenues designed by William
-                    Ward Watkin featuring country estates by architect John
-                    Staub.
-                  </p>
-                </div>
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setDistrictCategory("all")}
+                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                    districtCategory === "all"
+                      ? "bg-amber-500 text-stone-950"
+                      : "bg-stone-800 text-stone-300 hover:bg-stone-700/70"
+                  }`}
+                >
+                  All ({HISTORIC_DISTRICTS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDistrictCategory("city")}
+                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                    districtCategory === "city"
+                      ? "bg-amber-500 text-stone-950"
+                      : "bg-stone-800 text-stone-300 hover:bg-stone-700/70"
+                  }`}
+                >
+                  City Districts (23)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDistrictCategory("heritage")}
+                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                    districtCategory === "heritage"
+                      ? "bg-amber-500 text-stone-950"
+                      : "bg-stone-800 text-stone-300 hover:bg-stone-700/70"
+                  }`}
+                >
+                  Heritage (1)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDistrictCategory("nrhp")}
+                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                    districtCategory === "nrhp"
+                      ? "bg-amber-500 text-stone-950"
+                      : "bg-stone-800 text-stone-300 hover:bg-stone-700/70"
+                  }`}
+                >
+                  National Register (3)
+                </button>
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end flex-shrink-0 border-t border-stone-800">
+            {/* Scrollable District Cards Grid */}
+            <div className="text-xs text-stone-300 overflow-y-auto pr-1 leading-relaxed flex-1 space-y-3">
+              {filteredDistricts.length === 0 ? (
+                <div className="text-center py-12 text-stone-400">
+                  <Shield className="w-8 h-8 text-stone-600 mx-auto mb-2" />
+                  <p>No historic districts matching "{districtSearch}"</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {filteredDistricts.map((d) => (
+                    <div
+                      key={d.id}
+                      className="p-3.5 bg-stone-800/80 rounded-lg border border-stone-700/70 flex flex-col justify-between hover:border-amber-500/50 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-amber-300 text-sm flex items-center gap-1.5">
+                            <Building2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                            <span>{d.name}</span>
+                          </h4>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {d.dist_num > 0 && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                #{d.dist_num}
+                              </span>
+                            )}
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-700/60 text-stone-300 border border-stone-600/40">
+                              {d.designated_year}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-stone-400 mt-0.5 font-sans">
+                          {d.designation_type} &bull; Designated {d.designated_year}
+                        </div>
+
+                        {/* Architectural Styles */}
+                        {d.arch_styles && d.arch_styles.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {d.arch_styles.map((style) => (
+                              <span
+                                key={style}
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-900/60 text-stone-300 border border-stone-700/60"
+                              >
+                                {style}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-stone-300 mt-2 leading-relaxed">
+                          {d.description}
+                        </p>
+                      </div>
+
+                      {/* Card Footer: View on Map Button */}
+                      <div className="mt-3 pt-2.5 border-t border-stone-700/50 flex items-center justify-between">
+                        <span className="text-[10px] text-stone-400">
+                          {d.bounds ? "Boundary Georeferenced" : ""}
+                        </span>
+                        <button
+                          type="button"
+                          data-testid={`view-district-${d.id}`}
+                          onClick={() => {
+                            onSelectLocation({
+                              lng: d.centroid[0],
+                              lat: d.centroid[1],
+                              bounds: d.bounds,
+                              district: {
+                                id: d.id,
+                                name: d.name,
+                                full_name: d.full_name,
+                                designated_year: d.designated_year,
+                                description: d.description,
+                                arch_styles: d.arch_styles,
+                              },
+                              zoom: 15.5,
+                            });
+                            setDistrictsModalOpen(false);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-medium transition-colors cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5" />
+                          View on Map
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-between items-center flex-shrink-0 border-t border-stone-800">
+              <span className="text-[11px] text-stone-400">
+                Click "View on Map" on any district to center and frame its boundary.
+              </span>
               <button
                 type="button"
                 onClick={() => setDistrictsModalOpen(false)}
-                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 font-semibold rounded-md text-xs transition-colors"
+                className="px-4 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold rounded-md text-xs transition-colors"
               >
                 Close Guide
               </button>

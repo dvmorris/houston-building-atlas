@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import maplibregl from "maplibre-gl";
 import { AlertCircle, X } from "lucide-react";
 import MapView, {
@@ -65,6 +65,7 @@ export default function App() {
   const [fullSampleParcels, setFullSampleParcels] = useState<ParcelProperties[]>(
     []
   );
+  const [yearHistogram, setYearHistogram] = useState<Record<string, number> | null>(null);
 
   // Synchronize map state with URL hash and handle browser forward/back navigation
   const mapStateHook = useMapState({
@@ -163,17 +164,29 @@ export default function App() {
     }
   };
 
-  // Handle location selection from SearchBar or GPS walking tour
+  // Handle location selection from SearchBar, Historic Districts Guide, or GPS walking tour
   const handleSelectLocation = (location: SearchSelectLocation) => {
-    if (mapRef.current && typeof mapRef.current.flyTo === "function") {
-      mapRef.current.flyTo({
-        center: [location.lng, location.lat],
-        zoom: location.zoom ?? 17,
-        essential: true,
-      });
+    if (mapRef.current) {
+      if (location.bounds && typeof mapRef.current.fitBounds === "function") {
+        mapRef.current.fitBounds(location.bounds as [number, number, number, number], {
+          padding: 48,
+          maxZoom: 16.5,
+          essential: true,
+        });
+      } else if (typeof mapRef.current.flyTo === "function") {
+        mapRef.current.flyTo({
+          center: [location.lng, location.lat],
+          zoom: location.zoom ?? 17,
+          essential: true,
+        });
+      }
     }
 
-    if (location.parcelId) {
+    if (location.district) {
+      setSelectedDistrict(location.district);
+      setSelectedParcel(null);
+      setSelectedLandmark(null);
+    } else if (location.parcelId) {
       const found = fullSampleParcels.find((p) => p.id === location.parcelId);
       if (found) {
         setSelectedParcel(found);
@@ -234,6 +247,18 @@ export default function App() {
       });
   }, [initialMapState.parcelId]);
 
+  // Load authoritative countywide build-year histogram for real-time structure counts
+  useEffect(() => {
+    fetch("/data/year_histogram.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setYearHistogram(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Initial landmark hydration from URL deep link
   useEffect(() => {
     if (initialMapState.landmarkId && !selectedLandmark) {
@@ -247,12 +272,21 @@ export default function App() {
     }
   }, [initialMapState.landmarkId, selectedLandmark]);
 
-  const visibleStructureCount =
-    sampleParcels.length > 0
-      ? sampleParcels.filter(
-          (p) => p.yr >= timeline.yearMin && p.yr <= timeline.yearMax
-        ).length
-      : undefined;
+  const visibleStructureCount = useMemo(() => {
+    if (yearHistogram) {
+      let count = 0;
+      for (let y = timeline.yearMin; y <= timeline.yearMax; y++) {
+        count += yearHistogram[String(y)] || 0;
+      }
+      return count;
+    }
+    if (sampleParcels.length > 0) {
+      return sampleParcels.filter(
+        (p) => p.yr >= timeline.yearMin && p.yr <= timeline.yearMax
+      ).length;
+    }
+    return undefined;
+  }, [yearHistogram, sampleParcels, timeline.yearMin, timeline.yearMax]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-stone-900 text-stone-100 overflow-hidden">

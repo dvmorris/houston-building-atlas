@@ -349,13 +349,24 @@ describe("Header & SearchBar", () => {
         screen.getByText("Houston Historic Districts Guide")
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/Houston Heights \(East, West, South\)/i)
+        screen.getByText("Old Sixth Ward")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Houston Heights West")
       ).toBeInTheDocument();
 
-      const closeGuideBtn = screen.getByRole("button", {
-        name: /close historic districts guide/i,
-      });
-      fireEvent.click(closeGuideBtn);
+      // Test View on Map button on Old Sixth Ward
+      const viewSixthWardBtn = screen.getByTestId("view-district-old-sixth-ward");
+      expect(viewSixthWardBtn).toBeInTheDocument();
+      fireEvent.click(viewSixthWardBtn);
+
+      expect(onSelectLocation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          district: expect.objectContaining({
+            name: "Old Sixth Ward",
+          }),
+        })
+      );
       expect(screen.queryByTestId("districts-guide-modal")).not.toBeInTheDocument();
     });
 

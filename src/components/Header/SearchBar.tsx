@@ -10,8 +10,9 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Search, X, Landmark, Building, MapPin, Hash } from "lucide-react";
-import { LandmarkProperties } from "../Map/MapView";
+import { Search, X, Landmark, Building, MapPin, Hash, Shield } from "lucide-react";
+import { LandmarkProperties, DistrictProperties } from "../Map/MapView";
+import { HISTORIC_DISTRICTS } from "../../utils/historicDistricts";
 
 export interface SearchSelectLocation {
   lng: number;
@@ -20,9 +21,11 @@ export interface SearchSelectLocation {
   parcelId?: string;
   landmark?: LandmarkProperties;
   address?: string;
+  bounds?: [number, number, number, number];
+  district?: DistrictProperties;
 }
 
-export type SearchResultType = "landmark" | "parcel" | "hcad" | "address";
+export type SearchResultType = "landmark" | "parcel" | "hcad" | "address" | "district";
 
 export interface SearchResultItem {
   id: string;
@@ -36,6 +39,8 @@ export interface SearchResultItem {
   zoom?: number;
   parcelId?: string;
   landmark?: LandmarkProperties;
+  bounds?: [number, number, number, number];
+  district?: DistrictProperties;
 }
 
 export interface SearchBarProps {
@@ -458,7 +463,38 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       }
     }
 
-    // 3. Address and Parcel Search
+    // 3. Instant Historic District Search
+    for (const dist of HISTORIC_DISTRICTS) {
+      const nameMatch = dist.name.toLowerCase().includes(normQuery);
+      const fullNameMatch = dist.full_name.toLowerCase().includes(normQuery);
+      const styleMatch = dist.arch_styles.some((s) => s.toLowerCase().includes(normQuery));
+      const descMatch = dist.description.toLowerCase().includes(normQuery);
+
+      if (nameMatch || fullNameMatch || styleMatch || descMatch) {
+        items.push({
+          id: `district-${dist.id}`,
+          type: "district",
+          title: dist.name,
+          subtitle: `${dist.designation_type} • Designated ${dist.designated_year} • ${dist.arch_styles.slice(0, 2).join(", ")}`,
+          badge: dist.dist_num ? `District #${dist.dist_num}` : "Historic District",
+          year: dist.designated_year,
+          lng: dist.centroid[0],
+          lat: dist.centroid[1],
+          zoom: 15.5,
+          bounds: dist.bounds,
+          district: {
+            id: dist.id,
+            name: dist.name,
+            full_name: dist.full_name,
+            designated_year: dist.designated_year,
+            description: dist.description,
+            arch_styles: dist.arch_styles,
+          },
+        });
+      }
+    }
+
+    // 4. Address and Parcel Search
     for (const p of allParcels) {
       // Avoid duplicate if already matched by HCAD
       if (items.some((item) => item.parcelId === p.id)) continue;
@@ -537,6 +573,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         zoom: item.zoom ?? 17,
         parcelId: item.parcelId,
         landmark: item.landmark,
+        bounds: item.bounds,
+        district: item.district,
         address: item.title,
       });
       setQuery(item.title);
@@ -672,6 +710,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 }`}
               >
                 <div className="mt-0.5 flex-shrink-0">
+                  {item.type === "district" && (
+                    <div className="p-1.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                  )}
                   {item.type === "landmark" && (
                     <div className="p-1.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
                       <Landmark className="w-4 h-4" />
@@ -702,7 +745,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     {item.badge && (
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                          item.type === "landmark"
+                          item.type === "district"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                            : item.type === "landmark"
                             ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                             : item.type === "hcad"
                             ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"

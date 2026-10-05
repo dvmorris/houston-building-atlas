@@ -243,20 +243,20 @@ describe("HistoricSwipe component", () => {
     );
 
     const selectBtn = screen.getByTestId("historic-layer-select-btn");
-    expect(selectBtn).toHaveTextContent("1915 USGS Topo");
+    expect(selectBtn).toHaveTextContent("1915 Historical Survey");
 
     // Click to open menu
     fireEvent.click(selectBtn);
     expect(screen.getByTestId("historic-layer-menu")).toBeInTheDocument();
 
-    // Select Sanborn 1924 option
-    const sanbornOption = screen.getByTestId(
-      "historic-layer-option-sanborn-1924"
+    // Select 1922 Historical Survey option
+    const option1922 = screen.getByTestId(
+      "historic-layer-option-usgs-1922"
     );
-    expect(sanbornOption).toBeInTheDocument();
-    fireEvent.click(sanbornOption);
+    expect(option1922).toBeInTheDocument();
+    fireEvent.click(option1922);
 
-    expect(onLayerChange).toHaveBeenCalledWith("sanborn-1924");
+    expect(onLayerChange).toHaveBeenCalledWith("usgs-1922");
   });
 
   it("calculates correct clip-path string for various swipe positions", () => {

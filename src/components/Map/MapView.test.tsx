@@ -603,10 +603,10 @@ describe("MapView component", () => {
     const source = mockMapInstance.getSource("historic-raster-source");
     source.setTiles = mockSetTiles;
 
-    rerender(<MapView historicLayerId="sanborn-1924" />);
+    rerender(<MapView historicLayerId="usgs-1922" />);
 
     expect(mockSetTiles).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.stringContaining("Houston_1924_Sanborn")])
+      expect.arrayContaining([expect.stringContaining("USGS_Historical_Topographic_Maps")])
     );
   });
 

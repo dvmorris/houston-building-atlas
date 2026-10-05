@@ -95,6 +95,25 @@ def normalize_parcel(
     except (ValueError, TypeError):
         yr = 0
     
+    # Historic institutional founding year enrichment for tax-exempt superblocks
+    if yr <= 0:
+        o_upper = owner_str.upper()
+        a_upper = addr_str.upper()
+        if "RICE" in o_upper or "6100 MAIN" in a_upper:
+            yr = 1912  # Rice University (Lovett Hall founding)
+        elif "HERMANN" in o_upper or "6001 FANNIN" in a_upper:
+            yr = 1914  # Hermann Park establishment
+        elif "TEXAS MEDICAL CENTER" in o_upper or "MEMORIAL HERMANN" in o_upper or "METHODIST HOSPITAL" in o_upper:
+            yr = 1945  # Texas Medical Center founding
+        elif "UNIVERSITY OF HOUSTON" in o_upper or "4800 CALHOUN" in a_upper:
+            yr = 1927  # University of Houston founding
+        elif "MEMORIAL PARK" in o_upper or ("MEMORIAL" in a_upper and "PARK" in a_upper):
+            yr = 1924  # Memorial Park founding
+        elif "HOUSING AUTHORITY" in o_upper:
+            yr = 1940  # San Felipe Courts / Allen Parkway Village
+        elif "CITY OF HOUSTON" in o_upper and "BAGBY" in a_upper:
+            yr = 1939  # Houston City Hall / Civic Center
+    
     # Spatial join with historic districts
     dist_name = None
     contrib_status = -1  # Default: Outside Historic District

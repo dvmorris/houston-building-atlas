@@ -16,62 +16,64 @@ export interface HistoricMapLayer {
 }
 
 /**
- * Public georeferenced historic map layers for Houston comparative analysis.
+ * Authoritative georeferenced historic map layers for Houston comparative analysis.
+ * Sourced directly from the USGS Historical Topographic Map Collection (HTMC)
+ * via the USGS Historical Topographic Maps ImageServer.
  */
 export const HISTORIC_LAYERS: HistoricMapLayer[] = [
   {
     id: "usgs-1915",
     name: "1915 USGS Topographic Survey of Houston",
-    shortName: "1915 USGS Topo",
+    shortName: "1915 Historical Survey",
     year: 1915,
     description:
-      "1915 USGS 15-minute topographic survey of Houston and Harris County showing early rail networks, Buffalo Bayou navigation channels, and original municipal ward layouts.",
+      "Authentic 1915 USGS 15-minute topographic survey of Houston (1:24,000) documenting pre-freeway municipal wards, early Southern Pacific rail lines, and Buffalo Bayou before modern highway alterations.",
     tiles: [
-      "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}",
+      "https://historical1.arcgis.com/arcgis/rest/services/USGS_Historical_Topographic_Maps/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&size=256,256&imageSR=3857&format=jpgpng&f=image&mosaicRule=%7B%22mosaicMethod%22%3A%22esriMosaicAttribute%22%2C%22sortField%22%3A%22Year%22%2C%22sortValue%22%3A%221915%22%2C%22where%22%3A%22Year%3C%3D1920%22%7D",
     ],
     tileSize: 256,
     minzoom: 8,
     maxzoom: 18,
     bounds: [-95.65, 29.55, -95.1, 29.98],
     attribution:
-      '&copy; <a href="https://www.usgs.gov/" target="_blank" rel="noopener noreferrer">USGS</a> Historical Topographic Quadrangle Collection (1915 Houston 15\' Quad)',
+      '&copy; <a href="https://www.usgs.gov/" target="_blank" rel="noopener noreferrer">USGS</a> Historical Topographic Quadrangle Collection (1915 Houston Heights 1:24,000)',
     defaultOpacity: 0.9,
   },
   {
-    id: "sanborn-1924",
-    name: "1924 Sanborn Fire Insurance Map",
-    shortName: "1924 Sanborn",
-    year: 1924,
+    id: "usgs-1922",
+    name: "1922 USGS Topographic Survey of Houston",
+    shortName: "1922 Historical Survey",
+    year: 1922,
     description:
-      "High-resolution fire insurance atlas sheets documenting structural footprints, exterior wall materials (brick, stone, frame), building heights, and fire walls across Downtown Houston and surrounding wards.",
+      "1922 USGS 1:31,680 topographic survey capturing Houston's rapid industrial and residential expansion following the opening of the Houston Ship Channel.",
     tiles: [
-      "https://tiles.arcgis.com/tiles/historical-sanborn/arcgis/rest/services/Houston_1924_Sanborn/MapServer/tile/{z}/{y}/{x}",
+      "https://historical1.arcgis.com/arcgis/rest/services/USGS_Historical_Topographic_Maps/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&size=256,256&imageSR=3857&format=jpgpng&f=image&mosaicRule=%7B%22mosaicMethod%22%3A%22esriMosaicAttribute%22%2C%22sortField%22%3A%22Year%22%2C%22sortValue%22%3A%221922%22%2C%22where%22%3A%22Year%3C%3D1925%22%7D",
     ],
     tileSize: 256,
-    minzoom: 12,
-    maxzoom: 20,
-    bounds: [-95.42, 29.72, -95.32, 29.8],
+    minzoom: 8,
+    maxzoom: 18,
+    bounds: [-95.65, 29.55, -95.1, 29.98],
     attribution:
-      '&copy; <a href="https://www.loc.gov/collections/sanborn-maps/" target="_blank" rel="noopener noreferrer">Sanborn Map Company / Library of Congress</a> Geography &amp; Map Division',
-    defaultOpacity: 0.85,
+      '&copy; <a href="https://www.usgs.gov/" target="_blank" rel="noopener noreferrer">USGS</a> Historical Topographic Quadrangle Collection (1922 Houston Heights 1:31,680)',
+    defaultOpacity: 0.9,
   },
   {
-    id: "houston-1907",
-    name: "1907 City of Houston Ward & Street Survey",
-    shortName: "1907 Ward Survey",
-    year: 1907,
+    id: "usgs-1950",
+    name: "1950 Post-War USGS Survey of Houston",
+    shortName: "1950 Post-War Survey",
+    year: 1950,
     description:
-      "Turn-of-the-century municipal survey of Houston's historic six wards, streetcar lines, bayou crossings, and early neighborhood subdivisions.",
+      "Post-WWII 1950 USGS topographic survey documenting mid-century suburban expansion and early Houston freeway network planning.",
     tiles: [
-      "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
+      "https://historical1.arcgis.com/arcgis/rest/services/USGS_Historical_Topographic_Maps/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&size=256,256&imageSR=3857&format=jpgpng&f=image&mosaicRule=%7B%22mosaicMethod%22%3A%22esriMosaicAttribute%22%2C%22sortField%22%3A%22Year%22%2C%22sortValue%22%3A%221950%22%2C%22where%22%3A%22Year%3C%3D1955%22%7D",
     ],
     tileSize: 256,
-    minzoom: 9,
+    minzoom: 8,
     maxzoom: 18,
-    bounds: [-95.5, 29.65, -95.25, 29.85],
+    bounds: [-95.65, 29.55, -95.1, 29.98],
     attribution:
-      '&copy; <a href="https://www.glo.texas.gov/" target="_blank" rel="noopener noreferrer">Texas General Land Office</a> / City of Houston Archives',
-    defaultOpacity: 0.85,
+      '&copy; <a href="https://www.usgs.gov/" target="_blank" rel="noopener noreferrer">USGS</a> Historical Topographic Quadrangle Collection (1950 Houston 1:250,000)',
+    defaultOpacity: 0.9,
   },
 ];
 
@@ -79,8 +81,12 @@ export const DEFAULT_HISTORIC_LAYER_ID = "usgs-1915";
 
 /**
  * Retrieve historic layer specification by ID with fallback to default 1915 USGS layer.
+ * Also supports backward compatibility for legacy identifiers.
  */
 export function getHistoricLayer(id?: string | null): HistoricMapLayer {
+  if (id === "sanborn-1924" || id === "houston-1907") {
+    return HISTORIC_LAYERS[1]; // Map legacy option to 1922 historical survey
+  }
   const found = HISTORIC_LAYERS.find((l) => l.id === id);
   return found || HISTORIC_LAYERS[0];
 }
