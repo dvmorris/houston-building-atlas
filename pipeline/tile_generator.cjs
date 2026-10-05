@@ -111,7 +111,7 @@ async function run() {
       for (let y = yMin; y <= yMax; y++) {
         const tile = tileIndex.getTile(z, x, y);
         if (tile && tile.features && tile.features.length > 0) {
-          const pbf = vtpbf.fromGeojsonVt({ parcels: tile });
+          const pbf = vtpbf.fromGeojsonVt({ parcels: tile }, { version: 2 });
           const compressed = zlib.gzipSync(pbf);
           outStream.write(
             JSON.stringify({ z, x, y, data: compressed.toString('base64') }) + '\n'
