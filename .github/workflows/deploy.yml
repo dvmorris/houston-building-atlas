@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -32,11 +34,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Python dependencies
+        run: pip install -r pipeline/requirements.txt
 
       - name: Run Python Pipeline Tests
         run: python3 -m unittest discover -s pipeline/tests
+
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Run Vitest Unit Tests
         run: npm test -- --run
