@@ -298,6 +298,11 @@ export default function App() {
       {/* Main Map View Area */}
       <main className="relative flex-1 min-h-0">
         <MapView
+          pmtilesUrl={
+            typeof window !== "undefined" && window.location?.href
+              ? new URL("data/houston_parcels.pmtiles", window.location.href).href
+              : "/data/houston_parcels.pmtiles"
+          }
           initialCenter={[initialMapState.lng, initialMapState.lat]}
           initialZoom={initialMapState.zoom}
           yearMin={timeline.yearMin}
