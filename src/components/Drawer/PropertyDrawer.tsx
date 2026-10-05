@@ -256,17 +256,17 @@ export const PropertyDrawer: React.FC<PropertyDrawerProps> = ({
         data-testid="drawer-backdrop"
       />
 
-      {/* Main Drawer Container: Slide-out Panel on Desktop / Bottom Sheet on Mobile */}
+      {/* Main Drawer Container: Floating Sidebar Panel on Desktop / Bottom Sheet on Mobile */}
       <section
         role="dialog"
         aria-label={`Property details for ${address}`}
         aria-modal="false"
         data-testid="property-drawer"
         className={`fixed z-40 bg-stone-900/95 text-stone-100 shadow-2xl backdrop-blur-md flex flex-col border-stone-800 transition-all duration-300 ease-in-out
-          /* Mobile Bottom Sheet Layout */
+          /* Mobile Bottom Sheet Layout: full width, anchors to bottom */
           inset-x-0 bottom-0 max-h-[88vh] rounded-t-2xl border-t
-          /* Desktop Slide-out Layout: anchored to right side */
-          md:top-14 md:bottom-24 md:right-4 md:w-96 lg:w-[420px] md:max-h-none md:rounded-2xl md:border md:shadow-stone-950/80
+          /* Desktop Sidebar Layout: absolute within map container, never overlaps header or timeline bar */
+          md:absolute md:inset-auto md:top-3 md:bottom-3 md:left-4 md:right-auto md:w-96 lg:w-[420px] md:max-h-none md:rounded-2xl md:border md:shadow-stone-950/80
           ${className}`}
       >
         {/* Mobile drag handle bar */}
@@ -305,7 +305,7 @@ export const PropertyDrawer: React.FC<PropertyDrawerProps> = ({
         </header>
 
         {/* Scrollable Body Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar">
           {/* Prominent Year Built, Calculated Age & Era Tag */}
           <div className="rounded-xl bg-stone-800/60 border border-stone-700/60 p-3.5 space-y-2">
             <div className="flex items-center gap-2">

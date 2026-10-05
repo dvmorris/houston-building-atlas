@@ -260,4 +260,21 @@ describe("PropertyDrawer Component", () => {
     render(<PropertyDrawer parcel={mockParcel} isOpen={false} onClose={vi.fn()} />);
     expect(screen.queryByTestId("property-drawer")).not.toBeInTheDocument();
   });
+
+  it("applies desktop positioning classes to prevent timeline bar overlap", () => {
+    render(<PropertyDrawer parcel={mockParcel} isOpen={true} onClose={vi.fn()} />);
+    const drawer = screen.getByTestId("property-drawer");
+
+    // Must be absolute within map container on desktop and bounded top/bottom/left
+    expect(drawer.className).toContain("md:absolute");
+    expect(drawer.className).toContain("md:inset-auto");
+    expect(drawer.className).toContain("md:top-3");
+    expect(drawer.className).toContain("md:bottom-3");
+    expect(drawer.className).toContain("md:left-4");
+    expect(drawer.className).toContain("md:right-auto");
+
+    // Must NOT use old fixed bottom-24 that clashed with the timeline scrubber
+    expect(drawer.className).not.toContain("md:bottom-24");
+  });
 });
+
