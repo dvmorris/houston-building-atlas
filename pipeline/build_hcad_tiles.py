@@ -155,10 +155,11 @@ def extract_parcels(
     num_features = len(geom_wkb_list)
     print(f"Extracted {num_features} parcels within bbox in {time.time() - t0:.2f}s.")
     
-    hcad_col = field_data[0]
-    addr_col = field_data[1]
-    owner_col = field_data[2]
-    yr_col = field_data[3]
+    field_indices = {name: idx for idx, name in enumerate(meta['fields'])}
+    hcad_col = field_data[field_indices['HCAD_NUM']]
+    addr_col = field_data[field_indices['LocAddr']]
+    owner_col = field_data[field_indices['CurrOwner']]
+    yr_col = field_data[field_indices['yr_impr']]
     
     print("Reprojecting geometries and performing spatial joins...")
     t_join = time.time()

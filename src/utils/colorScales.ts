@@ -203,7 +203,7 @@ export function getMapLibreYearFilterExpression(
   minYear: number,
   maxYear: number,
   activeOpacity = 0.75,
-  inactiveOpacity = 0.05
+  inactiveOpacity = 0
 ): ExpressionSpecification {
   return [
     "case",

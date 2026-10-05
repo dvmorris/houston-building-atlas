@@ -63,7 +63,7 @@ describe("colorScales", () => {
       "case",
       ["all", [">=", ["get", "yr"], 1900], ["<=", ["get", "yr"], 1950]],
       0.75,
-      0.05,
+      0,
     ]);
 
     const customExpr = getMapLibreYearFilterExpression(1880, 1920, 0.9, 0.1);

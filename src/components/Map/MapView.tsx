@@ -379,7 +379,12 @@ export const MapView: React.FC<MapViewProps> = ({
           paint: {
             "line-color": "#57534e",
             "line-width": 0.5,
-            "line-opacity": 0.35,
+            "line-opacity": getMapLibreYearFilterExpression(
+              yearMinRef.current,
+              yearMaxRef.current,
+              0.35,
+              0
+            ),
           },
         });
 
@@ -425,7 +430,12 @@ export const MapView: React.FC<MapViewProps> = ({
           paint: {
             "line-color": "#57534e",
             "line-width": 0.5,
-            "line-opacity": 0.35,
+            "line-opacity": getMapLibreYearFilterExpression(
+              yearMinRef.current,
+              yearMaxRef.current,
+              0.35,
+              0
+            ),
           },
         });
 
@@ -612,19 +622,53 @@ export const MapView: React.FC<MapViewProps> = ({
         if (landmarkHits.length > 0) return; // Landmark takes click precedence
 
         if (!e.features || e.features.length === 0) return;
-        const feature = e.features[0];
+        const matchingFeature = e.features.find((f) => {
+          const rawYr = f.properties?.yr;
+          if (rawYr === undefined || rawYr === null) return true;
+          const yr = Number(rawYr);
+          if (isNaN(yr) || yr <= 0) return false;
+          return yr >= yearMinRef.current && yr <= yearMaxRef.current;
+        });
+
+        if (!matchingFeature) {
+          // If no parcel at this location matches the active year filter, check if a district was clicked underneath
+          const districtHits = map.queryRenderedFeatures(e.point, {
+            layers: ["historic-districts-fill"],
+          });
+          if (districtHits.length > 0) {
+            onSelectDistrictRef.current?.(
+              districtHits[0].properties as unknown as DistrictProperties
+            );
+          } else {
+            onSelectParcelRef.current?.(null);
+          }
+          return;
+        }
+
         onSelectParcelRef.current?.(
-          feature.properties as unknown as ParcelProperties
+          matchingFeature.properties as unknown as ParcelProperties
         );
       });
 
       // District Click (when not clicking parcel or landmark)
       map.on("click", "historic-districts-fill", (e) => {
         if (isClickOnHistoricSide(e.point)) return;
-        const higherFeatures = map.queryRenderedFeatures(e.point, {
-          layers: ["landmarks-outer", "landmarks-inner", "parcels-fill"],
+        const landmarkHits = map.queryRenderedFeatures(e.point, {
+          layers: ["landmarks-outer", "landmarks-inner"],
         });
-        if (higherFeatures.length > 0) return;
+        if (landmarkHits.length > 0) return;
+
+        const parcelHits = map.queryRenderedFeatures(e.point, {
+          layers: ["parcels-fill"],
+        });
+        const hasMatchingParcel = parcelHits.some((f) => {
+          const rawYr = f.properties?.yr;
+          if (rawYr === undefined || rawYr === null) return true;
+          const yr = Number(rawYr);
+          if (isNaN(yr) || yr <= 0) return false;
+          return yr >= yearMinRef.current && yr <= yearMaxRef.current;
+        });
+        if (hasMatchingParcel) return;
 
         if (e.features && e.features.length > 0) {
           onSelectDistrictRef.current?.(
@@ -644,7 +688,17 @@ export const MapView: React.FC<MapViewProps> = ({
             "historic-districts-fill",
           ],
         });
-        if (anyFeatures.length === 0) {
+        const visibleFeatures = anyFeatures.filter((f) => {
+          if (f.layer.id === "parcels-fill") {
+            const rawYr = f.properties?.yr;
+            if (rawYr === undefined || rawYr === null) return true;
+            const yr = Number(rawYr);
+            if (isNaN(yr) || yr <= 0) return false;
+            return yr >= yearMinRef.current && yr <= yearMaxRef.current;
+          }
+          return true;
+        });
+        if (visibleFeatures.length === 0) {
           onSelectParcelRef.current?.(null);
           onSelectLandmarkRef.current?.(null);
           onSelectDistrictRef.current?.(null);
@@ -671,7 +725,7 @@ export const MapView: React.FC<MapViewProps> = ({
   ]);
 
   // 2. Real-Time GPU Year Filtering
-  // Updates the MapLibre fill-opacity expression directly on the GPU without network requests
+  // Updates the MapLibre fill-opacity and line-opacity expressions directly on the GPU without network requests
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
@@ -680,6 +734,13 @@ export const MapView: React.FC<MapViewProps> = ({
         "parcels-fill",
         "fill-opacity",
         getMapLibreYearFilterExpression(yearMin, yearMax)
+      );
+    }
+    if (map.getLayer("parcels-line")) {
+      map.setPaintProperty(
+        "parcels-line",
+        "line-opacity",
+        getMapLibreYearFilterExpression(yearMin, yearMax, 0.35, 0)
       );
     }
   }, [yearMin, yearMax, mapLoaded]);

@@ -245,7 +245,18 @@ describe("MapView component", () => {
         "case",
         ["all", [">=", ["get", "yr"], 1900], ["<=", ["get", "yr"], 1940]],
         0.75,
-        0.05,
+        0,
+      ]
+    );
+
+    expect(mockMapInstance.setPaintProperty).toHaveBeenCalledWith(
+      "parcels-line",
+      "line-opacity",
+      [
+        "case",
+        ["all", [">=", ["get", "yr"], 1900], ["<=", ["get", "yr"], 1940]],
+        0.35,
+        0,
       ]
     );
   });
@@ -315,6 +326,45 @@ describe("MapView component", () => {
     });
 
     expect(onSelectParcel).toHaveBeenCalledWith(mockParcelData);
+  });
+
+  it("does not select parcel when clicked parcel year is outside active year filter range", () => {
+    const onSelectParcel = vi.fn();
+    render(
+      <MapView
+        yearMin={1836}
+        yearMax={1904}
+        onSelectParcel={onSelectParcel}
+      />
+    );
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    const parcelClickCallbacks = eventListeners.get("click:parcels-fill") || [];
+    expect(parcelClickCallbacks.length).toBeGreaterThan(0);
+
+    const modernParcelData = {
+      id: "1143360010002",
+      yr: 1979,
+      addr: "1201 MCDUFFIE ST",
+      owner: "NEXUS SERVICES LLC",
+      use: "RES",
+      contrib: 0,
+    };
+
+    act(() => {
+      parcelClickCallbacks.forEach((cb) =>
+        cb({
+          point: { x: 100, y: 100 },
+          features: [{ properties: modernParcelData }],
+        })
+      );
+    });
+
+    expect(onSelectParcel).toHaveBeenCalledWith(null);
   });
 
   it("emits onSelectLandmark once on landmarks-outer without duplicate callbacks", () => {
