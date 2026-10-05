@@ -29,6 +29,7 @@ export default function App() {
     maxBound: 2026,
     initialYearMin: initialMapState.yearMin,
     initialYearMax: initialMapState.yearMax,
+    mapRef,
   });
 
   const [selectedParcel, setSelectedParcel] =
@@ -307,6 +308,7 @@ export default function App() {
           initialZoom={initialMapState.zoom}
           yearMin={timeline.yearMin}
           yearMax={timeline.yearMax}
+          isPlaying={timeline.isPlaying}
           selectedParcelId={selectedParcel?.id}
           selectedLandmarkId={selectedLandmark?.id}
           onSelectParcel={handleSelectParcel}

@@ -52,6 +52,16 @@ export interface UseTimelinePlayerOptions {
    * Callback fired when year range updates via drag or playback tick
    */
   onYearChange?: (yearMin: number, yearMax: number) => void;
+  /**
+   * Optional MapLibre Map instance or React Ref for closed-loop render synchronization.
+   * When provided, playback ticks dynamically synchronize with map rendering and tile loading,
+   * guaranteeing the slider never moves ahead of the polygons displayed on screen.
+   */
+  mapRef?: { current: any } | null;
+  /**
+   * Direct MapLibre Map instance option
+   */
+  map?: any;
 }
 
 export interface UseTimelinePlayerReturn {
@@ -84,6 +94,8 @@ export function useTimelinePlayer(
     initialPlaying = false,
     loop: initialLoop = false,
     onYearChange,
+    mapRef,
+    map: mapOption,
   } = options;
 
   const [yearMin, setYearMinState] = useState<number>(() =>
@@ -189,14 +201,33 @@ export function useTimelinePlayer(
     setYearRange(minBound, maxBound);
   }, [minBound, maxBound, setYearRange]);
 
-  // Main timelapse playback tick interval
+  // Closed-loop adaptive timelapse playback ticker
+  // Automatically throttles progression to match browser rendering speed and tile availability
   useEffect(() => {
     if (!isPlaying) return;
 
-    const intervalMs = SPEED_INTERVALS[speed] ?? 150;
-    const intervalId = setInterval(() => {
+    let isCancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = () => {
+      if (isCancelled) return;
+
       const currentMax = yearMaxRef.current;
       const currentMin = yearMinRef.current;
+      const targetInterval = SPEED_INTERVALS[speed] ?? 150;
+      const startTime = performance.now();
+
+      const scheduleNext = () => {
+        if (isCancelled) return;
+        const elapsed = performance.now() - startTime;
+        const remaining = Math.max(0, targetInterval - elapsed);
+
+        timerId = setTimeout(() => {
+          if (!isCancelled) {
+            tick();
+          }
+        }, remaining);
+      };
 
       // Check if we need to loop back
       if (currentMax >= maxBound) {
@@ -205,6 +236,7 @@ export function useTimelinePlayer(
           setYearMaxState(resetYear);
           yearMaxRef.current = resetYear;
           onYearChangeRef.current?.(currentMin, resetYear);
+          scheduleNext();
         } else {
           setIsPlaying(false);
         }
@@ -212,25 +244,108 @@ export function useTimelinePlayer(
       }
 
       // Normal progression: step forward 1 year
-      const nextMax = currentMax + 1;
+      const nextMax = Math.min(maxBound, currentMax + 1);
 
-      if (nextMax >= maxBound) {
-        setYearMaxState(maxBound);
-        yearMaxRef.current = maxBound;
-        onYearChangeRef.current?.(currentMin, maxBound);
+      // Advance year state and notify listeners
+      setYearMaxState(nextMax);
+      yearMaxRef.current = nextMax;
+      onYearChangeRef.current?.(currentMin, nextMax);
 
-        if (!loopRef.current) {
-          setIsPlaying(false);
-        }
-      } else {
-        setYearMaxState(nextMax);
-        yearMaxRef.current = nextMax;
-        onYearChangeRef.current?.(currentMin, nextMax);
+      if (nextMax >= maxBound && !loopRef.current) {
+        setIsPlaying(false);
+        return;
       }
-    }, intervalMs);
 
-    return () => clearInterval(intervalId);
-  }, [isPlaying, speed, maxBound, minBound]);
+      const activeMap = mapRef?.current ?? mapOption ?? null;
+
+      if (!activeMap) {
+        // Fallback for headless / unit test environment without a live MapLibre instance
+        scheduleNext();
+        return;
+      }
+
+      // Live MapLibre instance present: closed-loop synchronization with map render and tile loading
+      let done = false;
+      const proceed = () => {
+        if (done || isCancelled) return;
+        done = true;
+        scheduleNext();
+      };
+
+      const checkTiles = () => {
+        if (isCancelled || done) return;
+
+        // Verify if all vector tiles in the current viewport have finished loading
+        if (
+          typeof activeMap.areTilesLoaded === "function" &&
+          !activeMap.areTilesLoaded()
+        ) {
+          const onIdle = () => {
+            if (isCancelled || done) return;
+            proceed();
+          };
+          activeMap.once("idle", onIdle);
+
+          // Safety timeout so playback never hangs indefinitely on a dropped tile
+          timerId = setTimeout(() => {
+            if (typeof activeMap.off === "function") {
+              activeMap.off("idle", onIdle);
+            }
+            proceed();
+          }, 350);
+          return;
+        }
+
+        proceed();
+      };
+
+      // Wait for MapLibre to complete drawing the updated year on the WebGL canvas
+      if (typeof activeMap.once === "function") {
+        const onRender = () => {
+          checkTiles();
+        };
+        activeMap.once("render", onRender);
+
+        // Safety timeout in case render event does not fire (e.g. static view)
+        timerId = setTimeout(() => {
+          if (typeof activeMap.off === "function") {
+            activeMap.off("render", onRender);
+          }
+          checkTiles();
+        }, targetInterval + 150);
+      } else {
+        scheduleNext();
+      }
+    };
+
+    // Kick off playback with initial tile readiness check
+    const initialDelay = SPEED_INTERVALS[speed] ?? 150;
+    const activeMap = mapRef?.current ?? mapOption ?? null;
+
+    if (
+      activeMap &&
+      typeof activeMap.areTilesLoaded === "function" &&
+      !activeMap.areTilesLoaded()
+    ) {
+      const onInitialIdle = () => {
+        if (isCancelled) return;
+        timerId = setTimeout(() => {
+          tick();
+        }, initialDelay);
+      };
+      activeMap.once("idle", onInitialIdle);
+      timerId = setTimeout(onInitialIdle, 400);
+    } else {
+      timerId = setTimeout(() => {
+        tick();
+      }, initialDelay);
+    }
+
+    return () => {
+      isCancelled = true;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [isPlaying, speed, maxBound, minBound, mapRef, mapOption]);
 
   return {
     yearMin,

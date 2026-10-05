@@ -261,6 +261,40 @@ describe("MapView component", () => {
     );
   });
 
+  it("disables parcels-line opacity during active playback for high frame rate, and restores it when stopped", () => {
+    const { rerender } = render(
+      <MapView yearMin={1850} yearMax={1920} isPlaying={false} />
+    );
+
+    const loadCallbacks = eventListeners.get("load") || [];
+    act(() => {
+      loadCallbacks.forEach((cb) => cb({}));
+    });
+
+    // Start playback
+    rerender(<MapView yearMin={1850} yearMax={1921} isPlaying={true} />);
+
+    expect(mockMapInstance.setPaintProperty).toHaveBeenCalledWith(
+      "parcels-line",
+      "line-opacity",
+      0
+    );
+
+    // Stop playback
+    rerender(<MapView yearMin={1850} yearMax={1921} isPlaying={false} />);
+
+    expect(mockMapInstance.setPaintProperty).toHaveBeenCalledWith(
+      "parcels-line",
+      "line-opacity",
+      [
+        "case",
+        ["all", [">=", ["get", "yr"], 1850], ["<=", ["get", "yr"], 1921]],
+        0.35,
+        0,
+      ]
+    );
+  });
+
   it("updates parcel highlight opacity when selectedParcelId changes", () => {
     const { rerender } = render(<MapView selectedParcelId={null} />);
 

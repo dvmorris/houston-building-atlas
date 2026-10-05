@@ -367,4 +367,97 @@ describe("useTimelinePlayer", () => {
       vi.advanceTimersByTime(500);
     });
   });
+
+  it("synchronizes playback with map render when mapRef is provided", () => {
+    let renderListener: (() => void) | null = null;
+    const mockMap = {
+      areTilesLoaded: vi.fn(() => true),
+      once: vi.fn((event: string, cb: () => void) => {
+        if (event === "render") {
+          renderListener = cb;
+        }
+      }),
+      off: vi.fn(),
+    };
+    const mapRef = { current: mockMap };
+
+    const { result } = renderHook(() =>
+      useTimelinePlayer({
+        initialYearMin: 1900,
+        initialYearMax: 1900,
+        initialSpeed: "1x",
+        mapRef,
+      })
+    );
+
+    act(() => {
+      result.current.play();
+    });
+
+    // Advance 150ms to trigger first tick
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+
+    // Year advanced to 1901 and registered once('render')
+    expect(result.current.yearMax).toBe(1901);
+    expect(mockMap.once).toHaveBeenCalledWith("render", expect.any(Function));
+
+    // Simulate map completing render
+    act(() => {
+      renderListener?.();
+    });
+
+    // Next tick should advance to 1902 after 150ms
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(result.current.yearMax).toBe(1902);
+  });
+
+  it("pauses progression when map tiles are loading until idle event", () => {
+    let tilesLoaded = false;
+    let idleListener: (() => void) | null = null;
+    const mockMap = {
+      areTilesLoaded: vi.fn(() => tilesLoaded),
+      once: vi.fn((event: string, cb: () => void) => {
+        if (event === "idle") {
+          idleListener = cb;
+        } else if (event === "render") {
+          cb();
+        }
+      }),
+      off: vi.fn(),
+    };
+    const mapRef = { current: mockMap };
+
+    const { result } = renderHook(() =>
+      useTimelinePlayer({
+        initialYearMin: 1900,
+        initialYearMax: 1900,
+        initialSpeed: "1x",
+        mapRef,
+      })
+    );
+
+    act(() => {
+      result.current.play();
+    });
+
+    // Tiles are not loaded initially, so playback holds until idle
+    expect(mockMap.once).toHaveBeenCalledWith("idle", expect.any(Function));
+    expect(result.current.yearMax).toBe(1900);
+
+    // Simulate tiles finishing loading
+    tilesLoaded = true;
+    act(() => {
+      idleListener?.();
+    });
+
+    // Advance 150ms
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(result.current.yearMax).toBe(1901);
+  });
 });
